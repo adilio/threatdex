@@ -6,7 +6,6 @@ All network calls are mocked so these tests run offline and in CI.
 
 from __future__ import annotations
 
-import json
 import sys
 import os
 from unittest.mock import MagicMock, patch

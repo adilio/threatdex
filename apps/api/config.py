@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,17 +18,17 @@ class Settings(BaseSettings):
     ADMIN_SECRET: str = "changeme"
 
     # CTI sources (optional — feature-flagged)
-    OTX_API_KEY: Optional[str] = None
-    SOCRADAR_API_KEY: Optional[str] = None
-    OPENAI_API_KEY: Optional[str] = None
-    MISP_URL: Optional[str] = None
-    MISP_API_KEY: Optional[str] = None
-    OPENCTI_URL: Optional[str] = None
-    OPENCTI_API_KEY: Optional[str] = None
+    OTX_API_KEY: str | None = None
+    SOCRADAR_API_KEY: str | None = None
+    OPENAI_API_KEY: str | None = None
+    MISP_URL: str | None = None
+    MISP_API_KEY: str | None = None
+    OPENCTI_URL: str | None = None
+    OPENCTI_API_KEY: str | None = None
 
     # App settings
     LOG_LEVEL: str = "info"
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: list[str] = ["*"]
 
 
 settings = Settings()

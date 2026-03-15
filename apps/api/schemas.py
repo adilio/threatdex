@@ -1,13 +1,13 @@
 from datetime import datetime
-from enum import Enum
-from typing import Generic, List, Optional, TypeVar
+from enum import StrEnum
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
 
-class Motivation(str, Enum):
+class Motivation(StrEnum):
     espionage = "espionage"
     financial = "financial"
     sabotage = "sabotage"
@@ -15,7 +15,7 @@ class Motivation(str, Enum):
     military = "military"
 
 
-class Sophistication(str, Enum):
+class Sophistication(StrEnum):
     low = "Low"
     medium = "Medium"
     high = "High"
@@ -23,19 +23,19 @@ class Sophistication(str, Enum):
     nation_state_elite = "Nation-State Elite"
 
 
-class Rarity(str, Enum):
+class Rarity(StrEnum):
     mythic = "MYTHIC"
     legendary = "LEGENDARY"
     epic = "EPIC"
     rare = "RARE"
 
 
-class TLP(str, Enum):
+class TLP(StrEnum):
     white = "WHITE"
     green = "GREEN"
 
 
-class SourceName(str, Enum):
+class SourceName(StrEnum):
     mitre = "mitre"
     etda = "etda"
     otx = "otx"
@@ -59,7 +59,7 @@ class Campaign(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     name: str
-    year: Optional[str] = None
+    year: str | None = None
     description: str
 
 
@@ -67,9 +67,9 @@ class SourceAttribution(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     source: SourceName
-    sourceId: Optional[str] = None
+    sourceId: str | None = None
     fetchedAt: str = Field(..., description="ISO 8601 timestamp")
-    url: Optional[str] = None
+    url: str | None = None
 
 
 # ── ThreatActor schemas ───────────────────────────────────────────────────────
@@ -80,26 +80,26 @@ class ThreatActorBase(BaseModel):
 
     id: str = Field(..., description="Slug, e.g. 'apt28'")
     canonicalName: str
-    aliases: List[str] = []
-    mitreId: Optional[str] = None
-    country: Optional[str] = None
-    countryCode: Optional[str] = None
-    motivation: List[Motivation] = []
+    aliases: list[str] = []
+    mitreId: str | None = None
+    country: str | None = None
+    countryCode: str | None = None
+    motivation: list[Motivation] = []
     threatLevel: int = Field(..., ge=1, le=10)
     sophistication: Sophistication
-    firstSeen: Optional[str] = None
-    lastSeen: Optional[str] = None
-    sectors: List[str] = []
-    geographies: List[str] = []
-    tools: List[str] = []
-    ttps: List[TTPUsage] = []
-    campaigns: List[Campaign] = []
+    firstSeen: str | None = None
+    lastSeen: str | None = None
+    sectors: list[str] = []
+    geographies: list[str] = []
+    tools: list[str] = []
+    ttps: list[TTPUsage] = []
+    campaigns: list[Campaign] = []
     description: str
-    tagline: Optional[str] = None
+    tagline: str | None = None
     rarity: Rarity
-    imageUrl: Optional[str] = None
-    imagePrompt: Optional[str] = None
-    sources: List[SourceAttribution] = []
+    imageUrl: str | None = None
+    imagePrompt: str | None = None
+    sources: list[SourceAttribution] = []
     tlp: TLP
     lastUpdated: str = Field(..., description="ISO 8601 timestamp")
 
@@ -155,7 +155,7 @@ T = TypeVar("T")
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
-    items: List[T]
+    items: list[T]
     total: int
     limit: int
     offset: int
@@ -170,14 +170,14 @@ class SyncLogResponse(BaseModel):
     id: int
     source: str
     started_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     status: str
-    records_synced: Optional[int] = None
-    error_message: Optional[str] = None
+    records_synced: int | None = None
+    error_message: str | None = None
 
 
 class SourceStatus(BaseModel):
     source: str
-    last_sync: Optional[datetime] = None
-    status: Optional[str] = None
-    records_synced: Optional[int] = None
+    last_sync: datetime | None = None
+    status: str | None = None
+    records_synced: int | None = None
