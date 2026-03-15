@@ -14,8 +14,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Point the app at the in-memory SQLite database *before* importing app code
-# that reads DATABASE_URL at module level.
+# Point the app at the in-memory SQLite database *before* importing app code.
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
 os.environ.setdefault("ADMIN_SECRET", "test-secret")
@@ -45,6 +44,7 @@ def override_get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+# Install the override globally for all tests
 app.dependency_overrides[get_db] = override_get_db
 
 
@@ -60,24 +60,20 @@ def create_tables():
 
 
 @pytest.fixture()
-def db_session() -> Generator[Session, None, None]:
-    """Yield a fresh database session; roll back after each test."""
-    connection = test_engine.connect()
-    transaction = connection.begin()
-    session = Session(bind=connection)
-
-    yield session
-
-    session.close()
-    transaction.rollback()
-    connection.close()
-
-
-@pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
     """Yield a synchronous TestClient backed by the in-memory database."""
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture()
+def db_session() -> Generator[Session, None, None]:
+    """Yield a database session that is rolled back after each test."""
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @pytest.fixture()
@@ -134,8 +130,4 @@ def sample_actor(db_session: Session) -> ThreatActor:
     db_session.add(actor)
     db_session.commit()
     db_session.refresh(actor)
-
-    # Make the override session use the same committed data
-    app.dependency_overrides[get_db] = lambda: iter([db_session])
-
     return actor
