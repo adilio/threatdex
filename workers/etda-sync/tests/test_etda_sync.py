@@ -9,7 +9,6 @@ from __future__ import annotations
 import sys
 import os
 
-import pytest
 
 # ---------------------------------------------------------------------------
 # Path setup

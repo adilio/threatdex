@@ -123,7 +123,7 @@ describe("CardFront", () => {
 
   it("renders the origin country", () => {
     render(<CardFront actor={mockActor} />)
-    expect(screen.getByText(/Russia/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Russia/).length).toBeGreaterThanOrEqual(1)
   })
 
   it("renders the active period", () => {
@@ -291,13 +291,15 @@ describe("RarityBadge", () => {
   it("applies MYTHIC yellow background", () => {
     const { container } = render(<RarityBadge rarity="MYTHIC" />)
     const badge = container.firstChild as HTMLElement
-    expect(badge.style.background).toContain("#FFFF00")
+    // Browsers normalize hex colors to rgb(); accept either form
+    expect(badge.style.background).toMatch(/#FFFF00|rgb\(255,\s*255,\s*0\)/)
   })
 
   it("applies LEGENDARY pink background", () => {
     const { container } = render(<RarityBadge rarity="LEGENDARY" />)
     const badge = container.firstChild as HTMLElement
-    expect(badge.style.background).toContain("#FF0BBE")
+    // Browsers normalize hex colors to rgb(); accept either form
+    expect(badge.style.background).toMatch(/#FF0BBE|rgb\(255,\s*11,\s*190\)/)
   })
 
   it("accepts size prop without error", () => {

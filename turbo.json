@@ -4,7 +4,7 @@
     ".env.example",
     "tsconfig*.json"
   ],
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": [
