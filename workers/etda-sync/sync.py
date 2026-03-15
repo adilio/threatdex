@@ -326,18 +326,26 @@ def parse_actor_page(html: str, group_name: str) -> ThreatActorData | None:
     first_seen: str | None = None
     last_seen: str | None = None
 
-    first_seen_re = re.compile(r"(?:first\s+seen|active\s+since|since)[:\s]+(.{0,30})", re.IGNORECASE)
-    last_seen_re = re.compile(r"(?:last\s+seen|last\s+active)[:\s]+(.{0,30})", re.IGNORECASE)
+    first_seen_re = re.compile(r"(?:first\s+seen|active\s+since|since)[:\s]*(.{0,30})", re.IGNORECASE)
+    last_seen_re = re.compile(r"(?:last\s+seen|last\s+active)[:\s]*(.{0,30})", re.IGNORECASE)
 
-    for line in full_text.splitlines():
+    lines = full_text.splitlines()
+    for i, line in enumerate(lines):
+        # Try same-line match first, then next-line fallback for label/value split
         if not first_seen:
             m = first_seen_re.search(line)
             if m:
-                first_seen = _parse_year(m.group(1))
+                candidate = m.group(1).strip()
+                first_seen = _parse_year(candidate) or (
+                    _parse_year(lines[i + 1]) if i + 1 < len(lines) else None
+                )
         if not last_seen:
             m = last_seen_re.search(line)
             if m:
-                last_seen = _parse_year(m.group(1))
+                candidate = m.group(1).strip()
+                last_seen = _parse_year(candidate) or (
+                    _parse_year(lines[i + 1]) if i + 1 < len(lines) else None
+                )
 
     # ----------------------------------------------------------------
     # Sectors
@@ -357,11 +365,21 @@ def parse_actor_page(html: str, group_name: str) -> ThreatActorData | None:
     # Tools (look for a "Tools" or "Malware" section)
     # ----------------------------------------------------------------
     tools: list[str] = []
-    tools_re = re.compile(r"(?:tools?|malware|backdoor)[:\s]+([^\n.]+)", re.IGNORECASE)
-    for line in full_text.splitlines():
-        m = tools_re.search(line)
-        if m:
+    tools_label_re = re.compile(r"^(?:tools?|malware|backdoor):?\s*$", re.IGNORECASE)
+    tools_inline_re = re.compile(r"(?:tools?|malware|backdoor)[:\s]+([^\n.]+)", re.IGNORECASE)
+    tool_lines = full_text.splitlines()
+    for i, line in enumerate(tool_lines):
+        # Inline pattern: "Tools: X-Agent, Sofacy"
+        m = tools_inline_re.search(line)
+        if m and m.group(1).strip():
             for t in re.split(r"[,;]", m.group(1)):
+                t = t.strip()
+                if t and t not in tools:
+                    tools.append(t)
+            continue
+        # Label-only line followed by values on next line
+        if tools_label_re.match(line.strip()) and i + 1 < len(tool_lines):
+            for t in re.split(r"[,;]", tool_lines[i + 1]):
                 t = t.strip()
                 if t and t not in tools:
                     tools.append(t)
