@@ -4,8 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from PIL import Image, ImageDraw, ImageFont
-from sqlalchemy import cast, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Text, cast, func
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -195,14 +194,14 @@ def list_actors(
         q = q.filter(func.lower(ThreatActor.country) == country.lower())
 
     if motivation:
-        # JSONB containment: motivation array contains the given value
-        q = q.filter(ThreatActor.motivation.contains(cast([motivation.lower()], JSONB)))
+        # Substring match on the JSON-serialised motivation array.
+        # Works with both PostgreSQL JSONB and SQLite JSON columns.
+        q = q.filter(cast(ThreatActor.motivation, Text).like(f"%{motivation.lower()}%"))
 
     if search:
-        pattern = f"%{search}%"
         q = q.filter(
             func.lower(ThreatActor.canonical_name).like(f"%{search.lower()}%")
-            | func.cast(ThreatActor.aliases, type_=func.text()).like(pattern)
+            | cast(ThreatActor.aliases, Text).like(f"%{search}%")
         )
 
     total = q.count()
