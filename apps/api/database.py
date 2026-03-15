@@ -10,12 +10,14 @@ class Base(DeclarativeBase):
     pass
 
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-)
+_engine_kwargs: dict = {"pool_pre_ping": True}
+
+# pool_size / max_overflow are not supported by SQLite (used in tests).
+if not settings.DATABASE_URL.startswith("sqlite"):
+    _engine_kwargs["pool_size"] = 10
+    _engine_kwargs["max_overflow"] = 20
+
+engine = create_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 SessionLocal = sessionmaker(
     bind=engine,
