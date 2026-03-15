@@ -1,0 +1,115 @@
+name: Nightly Data Sync
+
+on:
+  # Run every night at 02:00 UTC
+  schedule:
+    - cron: "0 2 * * *"
+  # Allow manual trigger from the Actions UI
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Sync a specific source (leave blank for all)"
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - mitre
+          - etda
+          - otx
+
+jobs:
+  sync:
+    name: Sync CTI Sources
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # MITRE ATT&CK (always run)
+      # -----------------------------------------------------------------------
+      - name: Sync MITRE ATT&CK
+        if: ${{ github.event.inputs.source == '' || github.event.inputs.source == 'mitre' }}
+        run: |
+          echo "Triggering MITRE ATT&CK sync..."
+          RESPONSE=$(curl --silent --show-error --fail \
+            --write-out "\n%{http_code}" \
+            --max-time 300 \
+            -X POST "${{ secrets.API_URL }}/api/admin/sync/mitre" \
+            -H "X-Admin-Secret: ${{ secrets.ADMIN_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response body: $BODY"
+          echo "HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "MITRE sync failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "MITRE sync triggered successfully."
+
+      # -----------------------------------------------------------------------
+      # ETDA APT Groups (always run)
+      # -----------------------------------------------------------------------
+      - name: Sync ETDA APT Groups
+        if: ${{ github.event.inputs.source == '' || github.event.inputs.source == 'etda' }}
+        run: |
+          echo "Triggering ETDA APT Groups sync..."
+          RESPONSE=$(curl --silent --show-error --fail \
+            --write-out "\n%{http_code}" \
+            --max-time 300 \
+            -X POST "${{ secrets.API_URL }}/api/admin/sync/etda" \
+            -H "X-Admin-Secret: ${{ secrets.ADMIN_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response body: $BODY"
+          echo "HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "ETDA sync failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "ETDA sync triggered successfully."
+
+      # -----------------------------------------------------------------------
+      # AlienVault OTX (only if OTX_API_KEY secret is set)
+      # -----------------------------------------------------------------------
+      - name: Sync AlienVault OTX
+        if: >-
+          ${{ secrets.OTX_API_KEY != '' &&
+              (github.event.inputs.source == '' || github.event.inputs.source == 'otx') }}
+        run: |
+          echo "Triggering AlienVault OTX sync..."
+          RESPONSE=$(curl --silent --show-error --fail \
+            --write-out "\n%{http_code}" \
+            --max-time 300 \
+            -X POST "${{ secrets.API_URL }}/api/admin/sync/otx" \
+            -H "X-Admin-Secret: ${{ secrets.ADMIN_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response body: $BODY"
+          echo "HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "OTX sync failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "OTX sync triggered successfully."
+
+      - name: OTX skipped (no API key configured)
+        if: ${{ secrets.OTX_API_KEY == '' }}
+        run: echo "Skipping OTX sync — OTX_API_KEY secret is not configured."
+
+      - name: Sync complete
+        run: echo "All configured CTI source syncs have been dispatched."
