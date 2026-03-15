@@ -1,10 +1,28 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Index, Integer, String, Text, func
+from sqlalchemy import DateTime, Index, Integer, JSON, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import TypeDecorator
 
 from database import Base
+
+
+class _JSONBCompat(TypeDecorator):
+    """
+    Stores data as PostgreSQL JSONB when connected to Postgres, and falls back
+    to generic JSON (TEXT-backed) when connected to SQLite (e.g. in tests).
+    This lets us use JSONB semantics in production without breaking the
+    in-memory SQLite test database.
+    """
+
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(JSONB())
+        return dialect.type_descriptor(JSON())
 
 
 class ThreatActor(Base):
@@ -15,7 +33,7 @@ class ThreatActor(Base):
 
     # Identity
     canonical_name: Mapped[str] = mapped_column(String(256), nullable=False, index=True)
-    aliases: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    aliases: Mapped[list] = mapped_column(_JSONBCompat, nullable=False, default=list)
     mitre_id: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     # Attribution
@@ -23,24 +41,24 @@ class ThreatActor(Base):
     country_code: Mapped[str | None] = mapped_column(String(2), nullable=True)
 
     # Classification
-    motivation: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    motivation: Mapped[list] = mapped_column(_JSONBCompat, nullable=False, default=list)
     threat_level: Mapped[int] = mapped_column(Integer, nullable=False)
     sophistication: Mapped[str] = mapped_column(String(32), nullable=False)
     rarity: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
-    tlp: Mapped[str] = mapped_column(String(8), nullable=False, server_default="'WHITE'")
+    tlp: Mapped[str] = mapped_column(String(8), nullable=False, default="WHITE")
 
     # Timeline
     first_seen: Mapped[str | None] = mapped_column(String(4), nullable=True)
     last_seen: Mapped[str | None] = mapped_column(String(4), nullable=True)
 
     # Targeting
-    sectors: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
-    geographies: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    sectors: Mapped[list] = mapped_column(_JSONBCompat, nullable=False, default=list)
+    geographies: Mapped[list] = mapped_column(_JSONBCompat, nullable=False, default=list)
 
     # Capabilities
-    tools: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
-    ttps: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
-    campaigns: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    tools: Mapped[list] = mapped_column(_JSONBCompat, nullable=False, default=list)
+    ttps: Mapped[list] = mapped_column(_JSONBCompat, nullable=False, default=list)
+    campaigns: Mapped[list] = mapped_column(_JSONBCompat, nullable=False, default=list)
 
     # Narrative
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -51,7 +69,7 @@ class ThreatActor(Base):
     image_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Provenance
-    sources: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    sources: Mapped[list] = mapped_column(_JSONBCompat, nullable=False, default=list)
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -74,8 +92,13 @@ class ThreatActor(Base):
     __table_args__ = (
         Index("ix_threat_actors_rarity", "rarity"),
         Index("ix_threat_actors_country", "country"),
-        # GIN index for fast JSONB containment queries on motivation array
-        Index("ix_threat_actors_motivation_gin", "motivation", postgresql_using="gin"),
+        # GIN index for fast JSONB containment queries on motivation array (PostgreSQL only)
+        Index(
+            "ix_threat_actors_motivation_gin",
+            "motivation",
+            postgresql_using="gin",
+            sqlite_not_valid=True,  # SQLite silently ignores unknown dialect opts
+        ),
     )
 
 
