@@ -90,10 +90,8 @@ class ThreatActor(Base):
     )
 
     __table_args__ = (
-        Index("ix_threat_actors_rarity", "rarity"),
-        Index("ix_threat_actors_country", "country"),
         # GIN index for fast JSONB containment queries on motivation (PostgreSQL only).
-        # postgresql_using is silently ignored by other dialects (e.g. SQLite).
+        # postgresql_using is silently ignored by SQLite.
         Index("ix_threat_actors_motivation_gin", "motivation", postgresql_using="gin"),
     )
 

@@ -73,15 +73,15 @@ def upgrade() -> None:
         ),
     )
 
-    # Indexes on threat_actors
+    # Standard B-tree indexes
     op.create_index("ix_threat_actors_canonical_name", "threat_actors", ["canonical_name"])
     op.create_index("ix_threat_actors_rarity", "threat_actors", ["rarity"])
     op.create_index("ix_threat_actors_country", "threat_actors", ["country"])
-    op.create_index(
-        "ix_threat_actors_motivation_gin",
-        "threat_actors",
-        ["motivation"],
-        postgresql_using="gin",
+
+    # GIN index for efficient JSONB array containment queries (PostgreSQL only)
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_threat_actors_motivation_gin "
+        "ON threat_actors USING gin (motivation)"
     )
 
     # ── sync_logs ─────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ def downgrade() -> None:
     op.drop_index("ix_sync_logs_source", table_name="sync_logs")
     op.drop_table("sync_logs")
 
-    op.drop_index("ix_threat_actors_motivation_gin", table_name="threat_actors")
+    op.execute("DROP INDEX IF EXISTS ix_threat_actors_motivation_gin")
     op.drop_index("ix_threat_actors_country", table_name="threat_actors")
     op.drop_index("ix_threat_actors_rarity", table_name="threat_actors")
     op.drop_index("ix_threat_actors_canonical_name", table_name="threat_actors")
