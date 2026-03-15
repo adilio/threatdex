@@ -1,6 +1,6 @@
 """Tests for the /api/search endpoint."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -36,7 +36,7 @@ def _seed_actor(db: Session, *, actor_id: str, canonical_name: str, tools: list 
         rarity="RARE",
         sources=[],
         tlp="WHITE",
-        last_updated=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        last_updated=datetime(2026, 1, 1, tzinfo=UTC),
     )
     db.add(actor)
     db.commit()

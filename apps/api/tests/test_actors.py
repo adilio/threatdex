@@ -1,6 +1,6 @@
 """Tests for /api/actors endpoints."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -46,7 +46,7 @@ def _make_actor(
         sources=[],
         tlp="WHITE",
         country=country,
-        last_updated=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        last_updated=datetime(2026, 1, 1, tzinfo=UTC),
     )
     db.add(actor)
     db.commit()
