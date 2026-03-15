@@ -13,19 +13,35 @@ import pytest
 
 # ---------------------------------------------------------------------------
 # Path setup
+# The worker directory name ("etda-sync") contains a hyphen and cannot be
+# imported as a Python package directly. We load sync.py explicitly via
+# importlib to give it a unique module name, avoiding collisions when all
+# test suites are collected in the same pytest session.
 # ---------------------------------------------------------------------------
-_WORKERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import importlib.util
+
+_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+_WORKER_DIR = os.path.dirname(_TESTS_DIR)
+_WORKERS_ROOT = os.path.dirname(_WORKER_DIR)
+
 if _WORKERS_ROOT not in sys.path:
     sys.path.insert(0, _WORKERS_ROOT)
 
-from etda_sync.sync import (  # type: ignore[import]
-    _map_motivation,
-    _parse_techniques,
-    _parse_year,
-    parse_actor_page,
-    parse_group_list,
+_spec = importlib.util.spec_from_file_location(
+    "etda_sync_module",
+    os.path.join(_WORKER_DIR, "sync.py"),
 )
-from shared.models import ThreatActorData
+_etda_sync = importlib.util.module_from_spec(_spec)  # type: ignore[arg-type]
+sys.modules["etda_sync_module"] = _etda_sync
+_spec.loader.exec_module(_etda_sync)  # type: ignore[union-attr]
+
+_map_motivation = _etda_sync._map_motivation
+_parse_techniques = _etda_sync._parse_techniques
+_parse_year = _etda_sync._parse_year
+parse_actor_page = _etda_sync.parse_actor_page
+parse_group_list = _etda_sync.parse_group_list
+
+from shared.models import ThreatActorData  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Sample HTML fixtures

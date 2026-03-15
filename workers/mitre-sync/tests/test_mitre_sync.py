@@ -15,20 +15,39 @@ import pytest
 
 # ---------------------------------------------------------------------------
 # Path setup — allow importing the worker and shared packages from tests/
+# The worker directory uses a hyphen in its name ("mitre-sync") which is not
+# a valid Python identifier. We load sync.py explicitly via importlib to give
+# it a unique module name ("mitre_sync_module") so that it does not collide
+# with identically-named sync.py files in other worker directories when all
+# test suites are collected in the same pytest session.
 # ---------------------------------------------------------------------------
-_WORKERS_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import importlib.util
+
+_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+_WORKER_DIR = os.path.dirname(_TESTS_DIR)           # mitre-sync/
+_WORKERS_ROOT = os.path.dirname(_WORKER_DIR)        # workers/
+
+# Shared packages must be on sys.path
 if _WORKERS_ROOT not in sys.path:
     sys.path.insert(0, _WORKERS_ROOT)
 
-from mitre_sync.sync import (  # type: ignore[import]
-    _index_bundle,
-    _map_motivation,
-    _map_sophistication,
-    _slugify_actor,
-    fetch_stix_bundle,
-    parse_intrusion_set,
+# Load sync.py under a unique module name
+_spec = importlib.util.spec_from_file_location(
+    "mitre_sync_module",
+    os.path.join(_WORKER_DIR, "sync.py"),
 )
-from shared.models import ThreatActorData
+_mitre_sync = importlib.util.module_from_spec(_spec)  # type: ignore[arg-type]
+sys.modules["mitre_sync_module"] = _mitre_sync
+_spec.loader.exec_module(_mitre_sync)  # type: ignore[union-attr]
+
+_index_bundle = _mitre_sync._index_bundle
+_map_motivation = _mitre_sync._map_motivation
+_map_sophistication = _mitre_sync._map_sophistication
+_slugify_actor = _mitre_sync._slugify_actor
+fetch_stix_bundle = _mitre_sync.fetch_stix_bundle
+parse_intrusion_set = _mitre_sync.parse_intrusion_set
+
+from shared.models import ThreatActorData  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -324,7 +343,7 @@ class TestFetchStixBundle:
         mock_response.json.return_value = mock_bundle
         mock_response.raise_for_status.return_value = None
 
-        with patch("mitre_sync.sync.requests.get", return_value=mock_response) as mock_get:
+        with patch("mitre_sync_module.requests.get", return_value=mock_response) as mock_get:
             result = fetch_stix_bundle("https://example.com/bundle.json")
 
         mock_get.assert_called_once_with("https://example.com/bundle.json", timeout=120)
@@ -336,7 +355,7 @@ class TestFetchStixBundle:
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = req.HTTPError("404")
 
-        with patch("mitre_sync.sync.requests.get", return_value=mock_response):
+        with patch("mitre_sync_module.requests.get", return_value=mock_response):
             with pytest.raises(req.HTTPError):
                 fetch_stix_bundle("https://example.com/bundle.json")
 
