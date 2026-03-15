@@ -103,6 +103,9 @@ jobs:
       - name: Lint with Ruff
         run: ruff check apps/api workers
 
+      - name: Install worker shared dependencies
+        run: pip install sqlalchemy requests
+
       - name: Run tests with coverage
         env:
           DATABASE_URL: postgresql://threatdex:threatdex@localhost:5432/threatdex_test
@@ -110,6 +113,13 @@ jobs:
           ADMIN_SECRET: ci-test-secret
         run: |
           pytest apps/api/tests \
+            workers/shared/tests \
+            workers/mitre-sync/tests \
+            workers/etda-sync/tests \
+            workers/otx-sync/tests \
+            workers/image-gen/tests \
+            workers/misp-sync/tests \
+            workers/opencti-sync/tests \
             --cov=apps/api \
             --cov-report=term-missing \
             --cov-report=xml \

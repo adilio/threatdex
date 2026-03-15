@@ -1,8 +1,10 @@
 import io
 import logging
+import os
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import Text, cast, func
 from sqlalchemy.orm import Session
@@ -10,6 +12,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import ThreatActor
 from schemas import PaginatedResponse, ThreatActorResponse
+
+IMAGE_STORAGE_DIR = Path(os.environ.get("IMAGE_OUTPUT_DIR", "./images"))
 
 logger = logging.getLogger(__name__)
 
@@ -246,4 +250,40 @@ def card_back(actor_id: str, db: Session = Depends(get_db)) -> Response:
         raise HTTPException(status_code=404, detail=f"Actor '{actor_id}' not found")
 
     png_bytes = _render_back(actor)
+    return Response(content=png_bytes, media_type="image/png")
+
+
+# ── Hero image storage / retrieval ────────────────────────────────────────────
+
+
+@router.get("/{actor_id}/image", response_class=Response)
+def get_actor_image(actor_id: str, db: Session = Depends(get_db)) -> Response:
+    """Return the AI-generated hero image for an actor.
+
+    First checks the database ``image_url`` field for a local file path.
+    If the file exists it is served directly; otherwise falls back to generating
+    a placeholder card-front PNG on the fly.
+
+    Returns
+    -------
+    Response
+        PNG image with ``Content-Type: image/png``.
+    """
+    actor = db.get(ThreatActor, actor_id)
+    if actor is None:
+        raise HTTPException(status_code=404, detail=f"Actor '{actor_id}' not found")
+
+    # 1. Try the URL stored in the DB (may be an absolute local path or URL)
+    if actor.image_url:
+        stored_path = Path(actor.image_url)
+        if stored_path.is_absolute() and stored_path.exists():
+            return FileResponse(str(stored_path), media_type="image/png")
+
+    # 2. Try the conventional local storage directory
+    local_path = IMAGE_STORAGE_DIR / f"{actor_id}.png"
+    if local_path.exists():
+        return FileResponse(str(local_path), media_type="image/png")
+
+    # 3. Fall back to a generated placeholder card-front image
+    png_bytes = _render_front(actor)
     return Response(content=png_bytes, media_type="image/png")
