@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
@@ -28,7 +28,7 @@ def trigger_sync(
     source: str,
     db: Session = Depends(get_db),  # noqa: ARG001 — reserved for future use
     _: None = Depends(_verify_admin),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Trigger a manual data synchronisation for the specified CTI source.
 

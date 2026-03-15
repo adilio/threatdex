@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -15,14 +14,14 @@ router = APIRouter(prefix="/sources", tags=["sources"])
 _ALL_SOURCES = ["mitre", "etda", "otx", "misp", "opencti"]
 
 
-@router.get("", response_model=List[SourceStatus])
-def list_sources(db: Session = Depends(get_db)) -> List[SourceStatus]:
+@router.get("", response_model=list[SourceStatus])
+def list_sources(db: Session = Depends(get_db)) -> list[SourceStatus]:
     """
     Return a list of all known CTI sources with their most recent sync metadata.
 
     If a source has never been synced it is still returned with null timestamps.
     """
-    results: List[SourceStatus] = []
+    results: list[SourceStatus] = []
 
     for source_name in _ALL_SOURCES:
         # Most recent completed (or any) sync log for this source

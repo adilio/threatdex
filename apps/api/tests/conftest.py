@@ -5,8 +5,8 @@ Uses an in-memory SQLite database for speed — no external services required.
 """
 
 import os
-from datetime import datetime, timezone
-from typing import Generator
+from collections.abc import Generator
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -124,7 +124,7 @@ def sample_actor(db_session: Session) -> ThreatActor:
             }
         ],
         tlp="WHITE",
-        last_updated=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        last_updated=datetime(2026, 1, 1, tzinfo=UTC),
     )
 
     db_session.add(actor)

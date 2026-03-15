@@ -34,10 +34,10 @@ _WORKERS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _WORKERS_ROOT not in sys.path:
     sys.path.insert(0, _WORKERS_ROOT)
 
-from shared.db import get_engine, log_sync_complete, log_sync_error, log_sync_start, upsert_actor
-from shared.dedup import find_matching_actor, merge_actors
-from shared.models import Campaign, SourceAttribution, ThreatActorData, TTPUsage
-from shared.rarity import compute_rarity, compute_threat_level
+from shared.db import get_engine, log_sync_complete, log_sync_error, log_sync_start, upsert_actor  # noqa: E402
+from shared.dedup import find_matching_actor, merge_actors  # noqa: E402
+from shared.models import SourceAttribution, ThreatActorData, TTPUsage  # noqa: E402
+from shared.rarity import compute_rarity, compute_threat_level  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Configuration
