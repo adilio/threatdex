@@ -35,12 +35,12 @@ def search_actors(
 
     query = db.query(ThreatActor).filter(
         func.lower(ThreatActor.canonical_name).like(pattern)
-        # Aliases: cast the JSONB array to text for a simple substring search
-        | func.cast(ThreatActor.aliases, type_=func.text()).like(f"%{q}%")
+        # Aliases: cast the JSON array to text for a simple substring search
+        | cast(ThreatActor.aliases, Text).like(f"%{q}%")
         # Tools array substring search
-        | func.cast(ThreatActor.tools, type_=func.text()).like(f"%{q}%")
+        | cast(ThreatActor.tools, Text).like(f"%{q}%")
         # TTPs array substring search (covers technique names + IDs)
-        | func.cast(ThreatActor.ttps, type_=func.text()).like(f"%{q}%")
+        | cast(ThreatActor.ttps, Text).like(f"%{q}%")
     )
 
     total = query.count()
