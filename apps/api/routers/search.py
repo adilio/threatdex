@@ -1,7 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func
+from sqlalchemy import Text, cast, func
 from sqlalchemy.orm import Session
 
 from database import get_db
