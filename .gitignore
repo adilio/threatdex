@@ -63,8 +63,6 @@ sdist/
 wheels/
 *.whl
 .installed.cfg
-lib/
-lib64/
 MANIFEST
 
 # Virtual environments
@@ -128,6 +126,11 @@ coverage/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# -----------------------------------------------------------------------------
+# Claude Code agent artifacts
+# -----------------------------------------------------------------------------
+.claude/
 
 # -----------------------------------------------------------------------------
 # Misc
