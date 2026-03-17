@@ -1,6 +1,6 @@
 import React from "react"
 import type { ThreatActor, Rarity } from "~/schema"
-import { getRarityColor, getThreatLevelLabel, getSophisticationScore } from "~/schema"
+import { getRarityColor, getSophisticationScore } from "~/schema"
 import { RarityBadge } from "./RarityBadge"
 import { ThreatLevelBar } from "./ThreatLevelBar"
 
@@ -221,7 +221,6 @@ function SophisticationPips({
 export function CardFront({ actor, className }: CardFrontProps) {
   const rarityBorder = getRarityBorderStyle(actor.rarity)
   const sophScore = getSophisticationScore(actor.sophistication)
-  const threatLabel = getThreatLevelLabel(actor.threatLevel)
 
   const displayAliases = actor.aliases.slice(0, 3)
   const displayMotivations = actor.motivation.slice(0, 4)
