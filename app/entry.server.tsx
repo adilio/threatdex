@@ -12,27 +12,44 @@ export default function handleRequest(
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  loadContext: AppLoadContext,
+  _loadContext: AppLoadContext,
 ) {
   return new Promise((resolve, reject) => {
     let shellRendered = false
     const userAgent = request.headers.get("user-agent")
+    const isBot = userAgent ? isbot(userAgent) : false
 
     const { pipe, abort } = renderToPipeableStream(
       <ServerRouter context={routerContext} url={request.url} />,
       {
         onShellReady() {
           shellRendered = true
-          const body = new PassThrough()
-          const stream = createReadableStreamFromReadable(body)
-          responseHeaders.set("Content-Type", "text/html")
-          resolve(
-            new Response(stream, {
-              headers: responseHeaders,
-              status: responseStatusCode,
-            }),
-          )
-          pipe(body)
+          if (!isBot) {
+            const body = new PassThrough()
+            const stream = createReadableStreamFromReadable(body)
+            responseHeaders.set("Content-Type", "text/html")
+            resolve(
+              new Response(stream, {
+                headers: responseHeaders,
+                status: responseStatusCode,
+              }),
+            )
+            pipe(body)
+          }
+        },
+        onAllReady() {
+          if (isBot) {
+            const body = new PassThrough()
+            const stream = createReadableStreamFromReadable(body)
+            responseHeaders.set("Content-Type", "text/html")
+            resolve(
+              new Response(stream, {
+                headers: responseHeaders,
+                status: responseStatusCode,
+              }),
+            )
+            pipe(body)
+          }
         },
         onShellError(error: unknown) {
           reject(error)
