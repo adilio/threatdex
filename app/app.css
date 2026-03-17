@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-wiz-blue: #0254ec;
+  --color-purplish-pink: #ffbfff;
+  --color-cloudy-white: #ffffff;
+  --color-serious-blue: #00123f;
+  --color-blue-shadow: #173aaa;
+  --color-sky-blue: #6197ff;
+  --color-light-sky-blue: #978bff;
+  --color-pink-shadow: #c64ba4;
+  --color-vibrant-pink: #ff0bbe;
+  --color-frosting-pink: #ffbfd6;
+  --color-surprising-yellow: #ffff00;
+
+  --font-family-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-family-sans: "Inter", sans-serif;
+}
+
+/* Rarity glow classes for cards */
+.rarity-glow-mythic {
+  box-shadow: 0 0 12px #ffff00, 0 0 30px rgba(255, 255, 0, 0.25);
+}
+.rarity-glow-legendary {
+  box-shadow: 0 0 10px rgba(255, 11, 190, 0.7), 0 0 24px rgba(255, 11, 190, 0.25);
+}
+.rarity-glow-epic {
+  box-shadow: 0 0 8px rgba(151, 139, 255, 0.5), 0 0 20px rgba(151, 139, 255, 0.2);
+}
+.rarity-glow-rare {
+  box-shadow: 0 0 6px rgba(97, 151, 255, 0.4);
+}
