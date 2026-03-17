@@ -1,11 +1,9 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router"
-import { useLoaderData, useSearchParams } from "react-router"
-import { Suspense } from "react"
+import { useLoaderData } from "react-router"
 import { supabase } from "~/lib/supabase.server"
 import { ThreatActorCard } from "~/components/ThreatActorCard"
 import { SearchBar } from "~/components/SearchBar"
 import { FilterPanel } from "~/components/FilterPanel"
-import { CardSkeleton } from "~/components/CardSkeleton"
 import type { ThreatActor } from "~/schema"
 
 const LIMIT = 20
@@ -91,16 +89,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     offset,
     searchParams: { q: search, country, motivation, rarity },
   }
-}
-
-function ActorGridSkeleton() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <CardSkeleton key={i} />
-      ))}
-    </div>
-  )
 }
 
 export default function HomePage() {
