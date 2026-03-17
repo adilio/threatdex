@@ -57,7 +57,7 @@ export function ActorCard({
       link.download = `threatdex-${actor.id}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
-    } catch (err) {
+    } catch {
       // Download failed silently
     } finally {
       setDownloading(false);
