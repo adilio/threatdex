@@ -1,0 +1,51 @@
+import type { LinksFunction } from "react-router"
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router"
+import appCss from "./app.css?url"
+import { Navigation } from "~/components/Navigation"
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: appCss },
+  { rel: "preconnect", href: "https://fonts.googleapis.com" },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap",
+  },
+]
+
+export function meta() {
+  return [
+    { title: "ThreatDex — Know your adversaries, card by card" },
+    {
+      name: "description",
+      content:
+        "Aggregated cyber threat intelligence rendered as interactive trading cards.",
+    },
+  ]
+}
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta />
+        <Links />
+      </head>
+      <body style={{ backgroundColor: "#00123F", minHeight: "100vh", margin: 0 }}>
+        {children}
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  )
+}
+
+export default function App() {
+  return (
+    <>
+      <Navigation />
+      <Outlet />
+    </>
+  )
+}
