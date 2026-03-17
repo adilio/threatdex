@@ -1,404 +1,277 @@
-# ThreatDex — API Reference
+# ThreatDex — Data Access Reference
 
-Base URL: `http://localhost:8000` (development) or your deployed API URL.
+ThreatDex stores all threat actor data in Supabase (PostgreSQL). There is no
+separate REST API server — data is accessed via:
 
-All endpoints return JSON. All list responses are paginated (see [Pagination](#pagination)).
+1. **React Router loaders** — server-side Supabase queries for the web UI
+2. **Supabase auto-REST API** — for external integrations and programmatic access
+3. **Supabase JS SDK** — for any TypeScript consumers
 
 ---
 
 ## Table of Contents
 
-1. [Authentication](#authentication)
-2. [Error Responses](#error-responses)
-3. [Pagination](#pagination)
-4. [Endpoints](#endpoints)
-   - [GET /api/actors](#get-apiactors)
-   - [GET /api/actors/{id}](#get-apiactorsid)
-   - [GET /api/actors/{id}/card/front](#get-apiactorsidcardfront)
-   - [GET /api/actors/{id}/card/back](#get-apiactorsidcardback)
-   - [GET /api/search](#get-apisearch)
-   - [GET /api/sources](#get-apisources)
-   - [POST /api/admin/sync/{source}](#post-apiadminsyncsource)
+1. [Supabase REST API](#supabase-rest-api)
+2. [Authentication](#authentication)
+3. [Error Responses](#error-responses)
+4. [Pagination](#pagination)
+5. [Actors Table](#actors-table)
+   - [List actors](#list-actors)
+   - [Get a single actor](#get-a-single-actor)
+   - [Search actors](#search-actors)
+6. [Sources Table](#sources-table)
+7. [Triggering Manual Syncs](#triggering-manual-syncs)
+
+---
+
+## Supabase REST API
+
+Supabase exposes a PostgREST-compatible REST API automatically from your schema.
+
+Base URL: `https://<your-project>.supabase.co/rest/v1`
+
+All requests require the `apikey` header set to your `SUPABASE_ANON_KEY`.
 
 ---
 
 ## Authentication
 
-Most endpoints are public and require no authentication.
-
-The admin endpoint (`POST /api/admin/sync/{source}`) requires the
-`X-Admin-Secret` header to match the `ADMIN_SECRET` environment variable.
+Public endpoints (all actor reads) require only the anon key:
 
 ```
-X-Admin-Secret: your-admin-secret-here
+apikey: your-supabase-anon-key
+Authorization: Bearer your-supabase-anon-key
 ```
+
+Row-level security (RLS) is configured so that TLP:WHITE actor records are
+readable without authentication. No user login is required for read access.
 
 ---
 
 ## Error Responses
 
-All errors follow this format:
+Supabase PostgREST errors follow this format:
 
 ```json
 {
-  "detail": "Human-readable error message"
+  "code": "PGRST116",
+  "details": null,
+  "hint": null,
+  "message": "The result contains 0 rows"
 }
 ```
 
-| HTTP Status | Meaning                                            |
-|-------------|----------------------------------------------------|
-| 400         | Bad request — invalid query parameters             |
-| 401         | Unauthorized — missing or invalid admin secret     |
-| 404         | Not found — actor or resource does not exist       |
-| 422         | Unprocessable entity — validation error            |
-| 500         | Internal server error                              |
-| 503         | Service unavailable — upstream CTI source is down  |
+| HTTP Status | Meaning                                           |
+|-------------|---------------------------------------------------|
+| 400         | Bad request — invalid filter or malformed request |
+| 401         | Unauthorized — missing or invalid API key         |
+| 404         | Resource not found                                |
+| 406         | Not acceptable — RLS blocked the query            |
 
 ---
 
 ## Pagination
 
-All list endpoints accept `limit` and `offset` query parameters and return a
-paginated envelope:
+All list queries support `limit` and `offset` via query parameters or the JS SDK:
 
-```json
-{
-  "items": [ /* array of objects */ ],
-  "total": 312,
-  "limit": 20,
-  "offset": 0
-}
+```
+GET /rest/v1/actors?limit=20&offset=0
 ```
 
-| Parameter | Type    | Default | Max  | Description                    |
-|-----------|---------|---------|------|--------------------------------|
-| `limit`   | integer | 20      | 100  | Number of items to return      |
-| `offset`  | integer | 0       | —    | Number of items to skip        |
+The `Content-Range` response header indicates total row count:
+
+```
+Content-Range: 0-19/312
+```
 
 ---
 
-## Endpoints
+## Actors Table
 
-### GET /api/actors
+The `actors` table stores all `ThreatActor` records. JSON columns store
+`ttps`, `campaigns`, `sources`, `aliases`, `tools`, `sectors`, `geographies`,
+and `motivation`.
 
-Returns a paginated list of threat actors. Supports filtering and full-text search.
+### List actors
 
-**Query Parameters**
-
-| Parameter    | Type   | Description                                                       |
-|--------------|--------|-------------------------------------------------------------------|
-| `country`    | string | Filter by country code (ISO 3166-1 alpha-2, e.g. `RU`, `CN`)     |
-| `motivation` | string | Filter by motivation: `espionage`, `financial`, `sabotage`, `hacktivism`, `military` |
-| `search`     | string | Full-text search across names, aliases, tools, and techniques     |
-| `limit`      | integer | Page size (default 20, max 100)                                  |
-| `offset`     | integer | Page offset (default 0)                                           |
-
-**Example Request**
+**via Supabase REST:**
 
 ```
-GET /api/actors?country=RU&motivation=espionage&limit=10&offset=0
+GET /rest/v1/actors?order=threat_level.desc&limit=20&offset=0
 ```
 
-**Example Response** `200 OK`
+**Filter by country:**
+
+```
+GET /rest/v1/actors?country_code=eq.RU&limit=20
+```
+
+**Filter by motivation (array contains):**
+
+```
+GET /rest/v1/actors?motivation=cs.{"espionage"}&limit=20
+```
+
+**via Supabase JS SDK:**
+
+```typescript
+const { data, error } = await supabase
+  .from("actors")
+  .select("*")
+  .eq("country_code", "RU")
+  .contains("motivation", ["espionage"])
+  .order("threat_level", { ascending: false })
+  .range(0, 19)
+```
+
+**Example response item:**
 
 ```json
 {
-  "items": [
+  "id": "apt28",
+  "canonical_name": "APT28",
+  "aliases": ["Fancy Bear", "Sofacy", "Pawn Storm", "STRONTIUM"],
+  "mitre_id": "G0007",
+  "country": "Russia",
+  "country_code": "RU",
+  "motivation": ["espionage", "sabotage"],
+  "threat_level": 9,
+  "sophistication": "Nation-State Elite",
+  "first_seen": "2004",
+  "last_seen": "2024",
+  "sectors": ["Government", "Military", "Defense", "Media"],
+  "geographies": ["Europe", "United States", "Ukraine"],
+  "tools": ["Mimikatz", "X-Agent", "Sofacy", "Zebrocy"],
+  "ttps": [
     {
-      "id": "apt28",
-      "canonicalName": "APT28",
-      "aliases": ["Fancy Bear", "Sofacy", "Pawn Storm", "STRONTIUM"],
-      "mitreId": "G0007",
-      "country": "Russia",
-      "countryCode": "RU",
-      "motivation": ["espionage", "sabotage"],
-      "threatLevel": 9,
-      "sophistication": "Nation-State Elite",
-      "firstSeen": "2004",
-      "lastSeen": "2024",
-      "sectors": ["Government", "Military", "Defense", "Media"],
-      "geographies": ["Europe", "United States", "Ukraine"],
-      "tools": ["Mimikatz", "X-Agent", "Sofacy", "Zebrocy"],
-      "ttps": [
-        {
-          "techniqueId": "T1566",
-          "techniqueName": "Phishing",
-          "tactic": "Initial Access"
-        }
-      ],
-      "campaigns": [
-        {
-          "name": "Operation Pawn Storm",
-          "year": "2014",
-          "description": "Targeted military, government, and media organizations."
-        }
-      ],
-      "description": "APT28 is a threat group attributed to Russia's GRU...",
-      "tagline": "Russia's cyber spearhead",
-      "rarity": "MYTHIC",
-      "imageUrl": "https://assets.threatdex.io/images/apt28.png",
-      "sources": [
-        {
-          "source": "mitre",
-          "sourceId": "G0007",
-          "fetchedAt": "2024-01-15T02:00:00Z",
-          "url": "https://attack.mitre.org/groups/G0007/"
-        }
-      ],
-      "tlp": "WHITE",
-      "lastUpdated": "2024-01-15T02:00:00Z"
+      "techniqueId": "T1566",
+      "techniqueName": "Phishing",
+      "tactic": "Initial Access"
     }
   ],
-  "total": 47,
-  "limit": 10,
-  "offset": 0
-}
-```
-
----
-
-### GET /api/actors/{id}
-
-Returns full details for a single threat actor.
-
-**Path Parameters**
-
-| Parameter | Type   | Description                                |
-|-----------|--------|--------------------------------------------|
-| `id`      | string | Actor slug (e.g. `apt28`, `lazarus-group`) |
-
-**Example Request**
-
-```
-GET /api/actors/apt28
-```
-
-**Example Response** `200 OK`
-
-Same schema as a single item in the list response above, with all fields populated.
-
-**Error Response** `404 Not Found`
-
-```json
-{
-  "detail": "Actor 'apt28' not found"
-}
-```
-
----
-
-### GET /api/actors/{id}/card/front
-
-Returns a PNG image of the card's front face for the specified actor. This is a
-rendered image (not JSON) suitable for downloading or embedding.
-
-**Path Parameters**
-
-| Parameter | Type   | Description |
-|-----------|--------|-------------|
-| `id`      | string | Actor slug  |
-
-**Example Request**
-
-```
-GET /api/actors/apt28/card/front
-```
-
-**Response**
-
-- Content-Type: `image/png`
-- Body: binary PNG data
-
-**Error Response** `404 Not Found`
-
-```json
-{
-  "detail": "Actor 'apt28' not found"
-}
-```
-
----
-
-### GET /api/actors/{id}/card/back
-
-Returns a PNG image of the card's back face for the specified actor.
-
-**Path Parameters**
-
-| Parameter | Type   | Description |
-|-----------|--------|-------------|
-| `id`      | string | Actor slug  |
-
-**Example Request**
-
-```
-GET /api/actors/apt28/card/back
-```
-
-**Response**
-
-- Content-Type: `image/png`
-- Body: binary PNG data
-
----
-
-### GET /api/search
-
-Full-text search across actor names, aliases, tools, and techniques. Returns
-paginated results ranked by relevance.
-
-**Query Parameters**
-
-| Parameter | Type    | Required | Description                               |
-|-----------|---------|----------|-------------------------------------------|
-| `q`       | string  | Yes      | Search query (minimum 2 characters)       |
-| `limit`   | integer | No       | Page size (default 20, max 100)           |
-| `offset`  | integer | No       | Page offset (default 0)                   |
-
-**Example Request**
-
-```
-GET /api/search?q=cobalt+strike&limit=5
-```
-
-**Example Response** `200 OK`
-
-```json
-{
-  "items": [
+  "campaigns": [
     {
-      "id": "fin7",
-      "canonicalName": "FIN7",
-      "aliases": ["Carbanak", "Navigator Group"],
-      "rarity": "LEGENDARY",
-      "country": "Unknown",
-      "motivation": ["financial"],
-      "threatLevel": 8,
-      "tagline": "The criminal empire behind Cobalt Strike campaigns"
+      "name": "Operation Pawn Storm",
+      "year": "2014",
+      "description": "Targeted military, government, and media organizations."
     }
   ],
-  "total": 12,
-  "limit": 5,
-  "offset": 0
-}
-```
-
-**Error Response** `400 Bad Request`
-
-```json
-{
-  "detail": "Query parameter 'q' is required and must be at least 2 characters"
+  "description": "APT28 is a threat group attributed to Russia's GRU...",
+  "tagline": "Russia's cyber spearhead",
+  "rarity": "MYTHIC",
+  "image_url": "https://<project>.supabase.co/storage/v1/object/public/images/apt28.png",
+  "sources": [
+    {
+      "source": "mitre",
+      "sourceId": "G0007",
+      "fetchedAt": "2024-01-15T02:00:00Z",
+      "url": "https://attack.mitre.org/groups/G0007/"
+    }
+  ],
+  "tlp": "WHITE",
+  "last_updated": "2024-01-15T02:00:00Z"
 }
 ```
 
 ---
 
-### GET /api/sources
+### Get a single actor
 
-Returns all configured CTI sources and their last synchronisation timestamps.
-
-**Example Request**
+**via Supabase REST:**
 
 ```
-GET /api/sources
+GET /rest/v1/actors?id=eq.apt28&limit=1
 ```
 
-**Example Response** `200 OK`
+**via Supabase JS SDK:**
 
-```json
-[
-  {
-    "source": "mitre",
-    "displayName": "MITRE ATT&CK",
-    "url": "https://attack.mitre.org",
-    "lastSync": "2024-01-15T02:03:47Z",
-    "actorCount": 143,
-    "status": "ok"
-  },
-  {
-    "source": "etda",
-    "displayName": "ETDA APT Groups",
-    "url": "https://apt.etda.or.th",
-    "lastSync": "2024-01-15T02:07:12Z",
-    "actorCount": 231,
-    "status": "ok"
-  },
-  {
-    "source": "otx",
-    "displayName": "AlienVault OTX",
-    "url": "https://otx.alienvault.com",
-    "lastSync": null,
-    "actorCount": 0,
-    "status": "disabled",
-    "reason": "OTX_API_KEY not configured"
-  }
-]
+```typescript
+const { data, error } = await supabase
+  .from("actors")
+  .select("*")
+  .eq("id", "apt28")
+  .single()
 ```
 
 ---
 
-### POST /api/admin/sync/{source}
+### Search actors
 
-Triggers a manual synchronisation for the specified CTI source. Enqueues a Celery
-task and returns immediately — the sync runs asynchronously.
+Full-text search uses PostgreSQL `tsvector`. The `actors` table has a generated
+`search_vector` column indexed for fast full-text queries.
 
-**Authentication:** Required. Pass the `X-Admin-Secret` header.
-
-**Path Parameters**
-
-| Parameter | Type   | Description                                              |
-|-----------|--------|----------------------------------------------------------|
-| `source`  | string | One of: `mitre`, `etda`, `otx`, `misp`, `opencti`, `all` |
-
-**Example Request**
+**via Supabase REST:**
 
 ```
-POST /api/admin/sync/mitre
-X-Admin-Secret: your-admin-secret-here
-Content-Type: application/json
+GET /rest/v1/actors?search_vector=fts.fancy+bear&limit=20
 ```
 
-**Example Response** `202 Accepted`
+**via Supabase JS SDK:**
+
+```typescript
+const { data, error } = await supabase
+  .from("actors")
+  .select("*")
+  .textSearch("search_vector", "fancy bear")
+  .limit(20)
+```
+
+---
+
+## Sources Table
+
+The `sync_log` table tracks each worker run and its outcome.
+
+**via Supabase JS SDK:**
+
+```typescript
+const { data, error } = await supabase
+  .from("sync_log")
+  .select("source, started_at, completed_at, records_synced, status, error_message")
+  .order("started_at", { ascending: false })
+  .limit(50)
+```
+
+**Example response item:**
 
 ```json
 {
-  "message": "Sync task enqueued for source: mitre",
-  "taskId": "c2a1e3f7-8b4d-4f2e-a9c0-1234567890ab",
   "source": "mitre",
-  "enqueuedAt": "2024-01-15T10:30:00Z"
-}
-```
-
-**Error Response** `401 Unauthorized`
-
-```json
-{
-  "detail": "Invalid or missing admin secret"
-}
-```
-
-**Error Response** `400 Bad Request`
-
-```json
-{
-  "detail": "Unknown source 'unknown'. Valid sources: mitre, etda, otx, misp, opencti, all"
-}
-```
-
-**Error Response** `503 Service Unavailable`
-
-```json
-{
-  "detail": "Source 'otx' is disabled — OTX_API_KEY is not configured"
+  "started_at": "2024-01-15T02:00:00Z",
+  "completed_at": "2024-01-15T02:03:47Z",
+  "records_synced": 143,
+  "status": "ok",
+  "error_message": null
 }
 ```
 
 ---
 
-## OpenAPI / Swagger UI
+## Triggering Manual Syncs
 
-When the API is running, interactive documentation is available at:
+Data syncs are triggered by running the TypeScript worker scripts directly. There
+is no HTTP endpoint for this — syncs are operational tasks run from CI or a
+developer's machine.
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-- OpenAPI JSON: `http://localhost:8000/openapi.json`
+```bash
+# Sync from MITRE ATT&CK
+pnpm workers:mitre
+
+# Sync from ETDA
+pnpm workers:etda
+
+# Sync from AlienVault OTX (requires OTX_API_KEY)
+pnpm workers:otx
+
+# Generate hero images (requires OPENAI_API_KEY)
+pnpm workers:image
+
+# Run all sources in sequence
+pnpm workers:all
+```
+
+Workers require `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` in the environment.
+See `.env.example` for the full list.
+
+The nightly cron in `.github/workflows/sync.yml` runs `pnpm workers:all`
+automatically at 02:00 UTC.
