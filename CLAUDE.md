@@ -10,42 +10,59 @@ will reference a phase and issue number from the task list at the bottom.
 
 ThreatDex is a web app that aggregates cyber threat actor intelligence from public
 CTI feeds (MITRE ATT&CK, ETDA, AlienVault OTX, MISP, OpenCTI) and renders each
-actor as an interactive “trading card” — flippable front/back with stats, TTPs,
+actor as an interactive "trading card" — flippable front/back with stats, TTPs,
 campaigns, tools, and references.
 
 **Tagline:** Know your adversaries, card by card.
 
 -----
 
-## 2. Monorepo structure
+## 2. Project structure
 
 ```
 threatdex/
-├── apps/
-│   ├── web/                  # Next.js 14 (App Router), TypeScript, Tailwind
-│   └── api/                  # FastAPI, Python 3.11+, SQLAlchemy, Pydantic v2
-├── packages/
-│   ├── schema/               # Shared Zod schemas + TypeScript interfaces
-│   └── ui/                   # Shared React card components
-├── workers/
-│   ├── mitre-sync/           # TAXII 2.1 ingestion worker
-│   ├── etda-sync/            # ETDA scraper worker
-│   └── image-gen/            # AI hero image generation queue
-├── infra/
-│   ├── docker-compose.yml    # Local full-stack environment
-│   └── terraform/            # Cloud infra (optional, later phase)
-├── docs/
-│   ├── API.md
-│   ├── DATA_SOURCES.md
-│   └── ARCHITECTURE.md
+├── app/                      # React Router v7 application
+│   ├── components/           # Card UI components
+│   ├── lib/
+│   │   ├── supabase.client.ts  # Browser Supabase client
+│   │   └── supabase.server.ts  # Server-side Supabase client
+│   ├── routes/
+│   │   ├── _index.tsx        # Home page — card grid + search/filters
+│   │   └── actors.$id.tsx    # Actor detail page
+│   ├── schema/
+│   │   └── index.ts          # Zod schemas + TypeScript types (canonical data model)
+│   ├── app.css               # Tailwind CSS v4 + brand design system
+│   ├── root.tsx
+│   └── routes.ts
+├── workers/                  # TypeScript data ingestion scripts (run via tsx)
+│   ├── mitre-sync.ts         # MITRE ATT&CK STIX bundle ingestion
+│   ├── etda-sync.ts          # ETDA APT scraper
+│   ├── otx-sync.ts           # AlienVault OTX connector
+│   ├── image-gen.ts          # AI hero image generation
+│   └── shared/               # Shared utilities
+│       ├── supabase.ts       # Supabase admin client for workers
+│       ├── models.ts         # Shared TypeScript data models
+│       ├── dedup.ts          # Alias deduplication + actor merge logic
+│       └── rarity.ts         # Rarity tier + threat level computation
+├── supabase/
+│   └── migrations/           # PostgreSQL schema + RLS policies
+├── tests/
+│   ├── components/           # Vitest component tests
+│   ├── e2e/                  # Playwright smoke tests
+│   └── workers/              # Worker unit tests
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml            # Test + lint on push/PR
 │       └── sync.yml          # Nightly data sync cron
+├── docs/
+│   ├── API.md
+│   ├── DATA_SOURCES.md
+│   └── ARCHITECTURE.md
 ├── .env.example
 ├── CLAUDE.md                 ← this file
 ├── CONTRIBUTING.md
 ├── SECURITY.md
+├── netlify.toml              # Netlify deployment (edge SSR)
 └── README.md
 ```
 
@@ -53,18 +70,17 @@ threatdex/
 
 ## 3. Tech stack
 
-|Layer           |Technology                                                 |
-|----------------|-----------------------------------------------------------|
-|Frontend        |Next.js 14 (App Router), TypeScript, Tailwind CSS          |
-|Backend         |FastAPI, Python 3.11, SQLAlchemy 2, Alembic, Pydantic v2   |
-|Database        |PostgreSQL 15                                              |
-|Cache / Queue   |Redis 7, Celery                                            |
-|Package manager |pnpm (workspaces) for JS, pip + requirements.txt for Python|
-|Testing (web)   |Vitest, Playwright                                         |
-|Testing (api)   |pytest, httpx                                              |
-|Linting         |ESLint + Prettier (JS/TS), Ruff (Python)                   |
-|CI              |GitHub Actions                                             |
-|Containerisation|Docker + Docker Compose                                    |
+| Layer           | Technology                                                      |
+|-----------------|-----------------------------------------------------------------|
+| Frontend        | React Router v7 (Vite SSR), TypeScript, Tailwind CSS v4        |
+| Database        | PostgreSQL 15 via Supabase (managed, auto-REST)                 |
+| Data access     | Supabase JS SDK (`@supabase/supabase-js`) in React Router loaders |
+| Workers         | TypeScript scripts executed via `tsx` in GitHub Actions         |
+| Package manager | pnpm (single `package.json`, no workspaces)                     |
+| Testing         | Vitest (unit), Playwright (e2e)                                 |
+| Linting         | ESLint + TypeScript-ESLint                                      |
+| CI              | GitHub Actions                                                  |
+| Hosting         | Netlify (edge SSR via `@netlify/vite-plugin-react-router`)      |
 
 -----
 
@@ -93,8 +109,8 @@ Overall feel: dark navy base, vivid blue/pink accents — Wiz-style, optimistic 
 
 ## 5. Data model (canonical)
 
-All ingestion workers and API endpoints must conform to this schema.
-The authoritative TypeScript definition lives in `packages/schema/src/index.ts`.
+All ingestion workers and UI components must conform to this schema.
+The authoritative TypeScript definition lives in `app/schema/index.ts`.
 
 ```typescript
 interface ThreatActor {
@@ -104,7 +120,7 @@ interface ThreatActor {
   mitreId?: string              // e.g. "G0007"
   country?: string
   countryCode?: string          // ISO 3166-1 alpha-2
-  motivation: Motivation[]      // "espionage" | "financial" | "sabotage" | "hacktivism"
+  motivation: Motivation[]      // "espionage" | "financial" | "sabotage" | "hacktivism" | "military"
   threatLevel: number           // 1–10
   sophistication: Sophistication
   firstSeen?: string            // YYYY
@@ -155,13 +171,13 @@ type Rarity = "MYTHIC" | "LEGENDARY" | "EPIC" | "RARE"
 Never commit secrets. Always read from environment. The full list lives in `.env.example`.
 
 ```bash
-# Infrastructure (required)
-DATABASE_URL=postgresql://user:password@localhost:5432/threatdex
-REDIS_URL=redis://localhost:6379
+# Supabase (required)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJ...          # Public, browser-safe
+SUPABASE_SERVICE_KEY=eyJ...       # Private, server-side + workers only
 
 # CTI sources (optional — feature-flag gracefully if missing)
 OTX_API_KEY=
-SOCRADAR_API_KEY=
 OPENAI_API_KEY=
 MISP_URL=
 MISP_API_KEY=
@@ -169,30 +185,64 @@ OPENCTI_URL=
 OPENCTI_API_KEY=
 ```
 
-If an optional key is missing, the relevant connector should log a warning and skip
-gracefully — never crash the application.
+If an optional key is missing, the relevant worker should log a warning and skip
+gracefully — never crash the process.
 
 -----
 
-## 7. API contract
+## 7. Data access pattern
 
-The FastAPI backend exposes these endpoints. Frontend calls must match exactly.
+Data is stored in Supabase (PostgreSQL). The frontend accesses it via React Router
+loaders using the Supabase JS SDK — there is no separate REST API server.
 
+### Route loader pattern
+
+```typescript
+// app/routes/_index.tsx
+import { createServerClient } from "~/lib/supabase.server"
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const supabase = createServerClient(request)
+  const { data, error } = await supabase
+    .from("actors")
+    .select("*")
+    .order("threat_level", { ascending: false })
+    .limit(20)
+  // ...
+}
 ```
-GET  /api/actors                    # list, supports ?country=&motivation=&search=&limit=&offset=
-GET  /api/actors/{id}               # single actor detail
-GET  /api/actors/{id}/card/front    # rendered card front (PNG)
-GET  /api/actors/{id}/card/back     # rendered card back (PNG)
-GET  /api/search?q=                 # search names, aliases, tools, techniques
-GET  /api/sources                   # list sources + last sync timestamps
-POST /api/admin/sync/{source}       # trigger manual sync (requires ADMIN_SECRET header)
+
+### Supabase table: `actors`
+
+Columns mirror the `ThreatActor` schema. JSON columns store `ttps`, `campaigns`,
+`sources`, `aliases`, `tools`, `sectors`, `geographies`, `motivation`.
+
+### Workers write via service key
+
+Workers use `SUPABASE_SERVICE_KEY` to bypass RLS and upsert actor records:
+
+```typescript
+// workers/shared/supabase.ts
+import { createClient } from "@supabase/supabase-js"
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+)
 ```
 
-All list responses are paginated:
+### Admin sync
 
-```json
-{ "items": [...], "total": 312, "limit": 20, "offset": 0 }
+Manual data syncs are triggered by running workers directly:
+
+```bash
+pnpm workers:mitre    # MITRE ATT&CK
+pnpm workers:etda     # ETDA
+pnpm workers:otx      # AlienVault OTX
+pnpm workers:image    # AI image generation
+pnpm workers:all      # all sources in sequence
 ```
+
+The nightly cron in `.github/workflows/sync.yml` runs these same commands.
 
 -----
 
@@ -217,15 +267,14 @@ git pull origin dev
 git checkout -b feature/issue-{N}-{short-slug}
 
 # 3. Do the work. Commit often with conventional commits:
-#    feat: add MITRE TAXII ingestion worker
+#    feat: add ETDA scraper worker
 #    fix: correct alias deduplication logic
-#    chore: add docker-compose postgres service
-#    test: add pytest coverage for actor endpoint
-#    docs: update API.md with search endpoint
+#    chore: add Supabase migration for actors table
+#    test: add Vitest coverage for rarity computation
+#    docs: update DATA_SOURCES.md with OTX connector
 
 # 4. Before opening PR, always run:
-pnpm lint && pnpm test          # for frontend/packages
-ruff check . && pytest          # for backend/workers
+pnpm lint && pnpm test
 
 # 5. Push and open PR against dev (not main)
 git push origin feature/issue-{N}-{short-slug}
@@ -256,7 +305,7 @@ Closes #{N}
 ## Testing
 <!-- How did you verify this works? -->
 - [ ] Unit tests added/updated
-- [ ] Ran locally with docker compose up
+- [ ] Ran locally with `pnpm dev`
 - [ ] No regressions in existing tests
 
 ## Screenshots (if frontend)
@@ -270,13 +319,19 @@ Closes #{N}
 
 ## 10. Testing requirements
 
-- **API:** Every new endpoint needs at least one happy-path pytest test and one
-  error-case test. Coverage must not drop below the current baseline.
-- **Workers:** Each sync worker needs a test that mocks the upstream API and
-  verifies the normalized output matches the ThreatActor schema.
+- **Workers:** Each sync worker needs a Vitest test that mocks the upstream fetch
+  and verifies the normalised output matches the `ThreatActor` schema.
 - **Frontend:** New page routes need a Playwright smoke test. New components need
   a Vitest unit test.
 - **Do not merge if tests are red.**
+
+Run all checks before opening a PR:
+
+```bash
+pnpm lint         # ESLint
+pnpm test         # Vitest unit tests
+pnpm test:e2e     # Playwright e2e (requires running app)
+```
 
 -----
 
@@ -287,93 +342,74 @@ Items within a phase can run in parallel unless marked with ⛔ (blocked by anot
 
 -----
 
-### Phase 1 — Foundation
+### Phase 1 — Foundation ✅ Complete
 
 *Goal: any engineer can clone and run the full stack in under 5 minutes.*
 
-|Issue|Title                                                   |Branch slug     |Notes                           |
-|-----|--------------------------------------------------------|----------------|--------------------------------|
-|#1   |Init monorepo with pnpm workspaces + Turborepo          |`init-monorepo` |First issue, unblocks everything|
-|#2   |Add Docker Compose (postgres, redis, api, web)          |`docker-compose`|⛔ needs #1                      |
-|#3   |Create .env.example with all required vars              |`env-example`   |Can run with #1                 |
-|#4   |Scaffold FastAPI app with health endpoint               |`api-scaffold`  |⛔ needs #1                      |
-|#5   |Scaffold Next.js 14 app with placeholder home page      |`web-scaffold`  |⛔ needs #1                      |
-|#6   |Add Postgres schema + Alembic migrations for ThreatActor|`db-schema`     |⛔ needs #4                      |
-|#7   |Add GitHub Actions CI workflow (lint + test)            |`ci-workflow`   |⛔ needs #1                      |
+| Issue | Title                                                  | Status   |
+|-------|--------------------------------------------------------|----------|
+| #1    | Init project with React Router v7 + Tailwind v4 + pnpm | ✅ Done  |
+| #2    | Set up Supabase project + migrations for actors table  | ✅ Done  |
+| #3    | Create .env.example with all required vars             | ✅ Done  |
+| #4    | Add Supabase RLS policies                              | ✅ Done  |
+| #5    | Scaffold home page + actor detail route                | ✅ Done  |
+| #6    | Add GitHub Actions CI workflow (lint + test)           | ✅ Done  |
 
 -----
 
-### Phase 2 — Data ingestion
+### Phase 2 — Data ingestion ✅ Complete
 
 *Goal: real threat actor data flowing into the database.*
 
-|Issue|Title                                            |Branch slug     |Notes                                                                   |
-|-----|-------------------------------------------------|----------------|------------------------------------------------------------------------|
-|#8   |MITRE TAXII 2.1 ingestion worker                 |`mitre-sync`    |⛔ needs #6. Pulls intrusion-set objects from attack-taxii.mitre.org     |
-|#9   |ETDA scraper worker                              |`etda-sync`     |⛔ needs #6. Scrapes apt.etda.or.th/cgi-bin/listgroups.cgi + showcard.cgi|
-|#10  |AlienVault OTX connector                         |`otx-sync`      |⛔ needs #6. Feature-flags off if OTX_API_KEY missing                    |
-|#11  |Alias deduplication + actor merge logic          |`alias-dedup`   |⛔ needs #8 #9. Reconciles same actor across sources                     |
-|#12  |Add nightly sync GitHub Actions cron             |`sync-cron`     |⛔ needs #8 #9                                                           |
-|#13  |Admin sync endpoint POST /api/admin/sync/{source}|`admin-sync-api`|⛔ needs #8 #9                                                           |
+| Issue | Title                                          | Status  |
+|-------|------------------------------------------------|---------|
+| #7    | MITRE ATT&CK STIX bundle ingestion worker      | ✅ Done |
+| #8    | ETDA scraper worker                            | ✅ Done |
+| #9    | AlienVault OTX connector                       | ✅ Done |
+| #10   | Alias deduplication + actor merge logic        | ✅ Done |
+| #11   | Rarity tier + threat level computation         | ✅ Done |
+| #12   | Add nightly sync GitHub Actions cron           | ✅ Done |
 
 -----
 
-### Phase 3 — API layer
+### Phase 3 — Frontend
 
-*Goal: frontend can fetch real data from the API.*
+*Goal: the card UI is live and pulling from real data.*
 
-|Issue|Title                                                  |Branch slug       |Notes              |
-|-----|-------------------------------------------------------|------------------|-------------------|
-|#14  |GET /api/actors list endpoint with filters + pagination|`actors-list-api` |⛔ needs #6         |
-|#15  |GET /api/actors/{id} detail endpoint                   |`actor-detail-api`|⛔ needs #14        |
-|#16  |GET /api/search endpoint                               |`search-api`      |⛔ needs #14        |
-|#17  |GET /api/sources endpoint                              |`sources-api`     |⛔ needs #6         |
-|#18  |Add OpenAPI docs + export to docs/API.md               |`api-docs`        |⛔ needs #14 #15 #16|
-
------
-
-### Phase 4 — Frontend
-
-*Goal: the card UI is live and pulling from the real API.*
-
-|Issue|Title                                             |Branch slug        |Notes                                   |
-|-----|--------------------------------------------------|-------------------|----------------------------------------|
-|#19  |Migrate prototype card components into packages/ui|`ui-components`    |⛔ needs #5. Port the React artifact code|
-|#20  |Home page — card grid with search + filters       |`home-page`        |⛔ needs #19 #14                         |
-|#21  |Actor detail page /actors/[id]                    |`actor-detail-page`|⛔ needs #19 #15                         |
-|#22  |Card flip animation + front/back layout           |`card-flip`        |⛔ needs #19                             |
-|#23  |Card download — export as PNG via html2canvas     |`card-download`    |⛔ needs #22                             |
-|#24  |Add generateMetadata() for actor pages (SEO)      |`actor-seo`        |⛔ needs #21                             |
-|#25  |Mobile responsive layout                          |`mobile-layout`    |⛔ needs #20 #21                         |
+| Issue | Title                                              | Branch slug         | Notes                    |
+|-------|----------------------------------------------------|---------------------|--------------------------|
+| #13   | Card front + back components with flip animation   | `card-flip`         | ⛔ needs Phase 2          |
+| #14   | Home page — card grid with search + filters        | `home-page`         | ⛔ needs #13              |
+| #15   | Actor detail page /actors/:id                      | `actor-detail-page` | ⛔ needs #13              |
+| #16   | Card download — export as PNG via html2canvas      | `card-download`     | ⛔ needs #13              |
+| #17   | Add `<meta>` tags for actor pages (SEO)            | `actor-seo`         | ⛔ needs #15              |
+| #18   | Mobile responsive layout                           | `mobile-layout`     | ⛔ needs #14 #15          |
 
 -----
 
-### Phase 5 — Image generation
+### Phase 4 — Image generation
 
 *Goal: every actor has a unique AI-generated hero image.*
 
-|Issue|Title                                                |Branch slug           |Notes                                       |
-|-----|-----------------------------------------------------|----------------------|--------------------------------------------|
-|#26  |Image prompt template builder from ThreatActor fields|`image-prompt-builder`|⛔ needs #6                                  |
-|#27  |Celery image generation worker (OpenAI / Stability)  |`image-gen-worker`    |⛔ needs #26. Feature-flags off if no API key|
-|#28  |Image storage + retrieval (Cloudflare R2 or local)   |`image-storage`       |⛔ needs #27                                 |
-|#29  |Wire generated images into card front hero area      |`card-hero-image`     |⛔ needs #28 #22                             |
+| Issue | Title                                                  | Branch slug            | Notes                                       |
+|-------|--------------------------------------------------------|------------------------|---------------------------------------------|
+| #19   | Image prompt template builder from ThreatActor fields  | `image-prompt-builder` |                                             |
+| #20   | Image generation worker (OpenAI DALL-E)                | `image-gen-worker`     | Feature-flagged off if no `OPENAI_API_KEY`  |
+| #21   | Image storage via Supabase Storage                     | `image-storage`        | ⛔ needs #20                                 |
+| #22   | Wire generated images into card front hero area        | `card-hero-image`      | ⛔ needs #21 #13                             |
 
 -----
 
-### Phase 6 — Polish + launch
+### Phase 5 — Polish + launch
 
 *Goal: production-ready, publicly shareable.*
 
-|Issue|Title                                            |Branch slug        |Notes              |
-|-----|-------------------------------------------------|-------------------|-------------------|
-|#30  |Write CONTRIBUTING.md with connector template    |`contributing-docs`|                   |
-|#31  |Write SECURITY.md + responsible disclosure policy|`security-docs`    |                   |
-|#32  |Write docs/DATA_SOURCES.md with full attribution |`data-sources-docs`|                   |
-|#33  |Add Playwright e2e smoke tests for core flows    |`e2e-tests`        |⛔ needs #20 #21    |
-|#34  |Deploy web to Vercel + API to Railway            |`deploy`           |⛔ needs all Phase 4|
-|#35  |Add optional MISP connector                      |`misp-connector`   |⛔ needs #11        |
-|#36  |Add optional OpenCTI connector                   |`opencti-connector`|⛔ needs #11        |
+| Issue | Title                                             | Branch slug         | Notes              |
+|-------|---------------------------------------------------|---------------------|--------------------|
+| #23   | Add Playwright e2e smoke tests for core flows     | `e2e-tests`         | ⛔ needs #14 #15    |
+| #24   | Deploy to Netlify (edge SSR)                      | `deploy`            | ⛔ needs Phase 3    |
+| #25   | Add optional MISP connector                       | `misp-connector`    | ⛔ needs #10        |
+| #26   | Add optional OpenCTI connector                    | `opencti-connector` | ⛔ needs #10        |
 
 -----
 
@@ -411,9 +447,8 @@ A task is done when:
 
 - [ ] Code is on a `feature/issue-{N}-*` branch
 - [ ] All new code has tests
-- [ ] `pnpm lint && pnpm test` passes (frontend/packages)
-- [ ] `ruff check . && pytest` passes (backend/workers)
+- [ ] `pnpm lint && pnpm test` passes
 - [ ] PR is open against `dev` with the PR template filled out
 - [ ] No secrets are committed
-- [ ] No `console.log` or `print()` debug statements left in
+- [ ] No `console.log` debug statements left in
 - [ ] CLAUDE.md has not been modified (changes need a separate PR)

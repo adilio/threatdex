@@ -8,9 +8,7 @@
 [![Sources: ETDA](https://img.shields.io/badge/Source-ETDA-orange.svg)](https://apt.etda.or.th)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-ThreatDex turns dry APT intelligence into interactive trading cards — making threat actor research faster, more visual, and actually kind of fun. Browse, filter, and collect intelligence on the world’s most dangerous cyber threat actors, sourced nightly from MITRE ATT&CK, ETDA, AlienVault OTX, and more.
-
-![ThreatDex screenshot](docs/screenshot.png)
+ThreatDex turns dry APT intelligence into interactive trading cards — making threat actor research faster, more visual, and actually kind of fun. Browse, filter, and collect intelligence on the world's most dangerous cyber threat actors, sourced nightly from MITRE ATT&CK, ETDA, AlienVault OTX, and more.
 
 -----
 
@@ -28,13 +26,13 @@ ThreatDex turns dry APT intelligence into interactive trading cards — making t
 
 ## 🗂️ Data Sources
 
-|Source                                           |Type         |Entities                         |Update Frequency|
-|-------------------------------------------------|-------------|---------------------------------|----------------|
-|[MITRE ATT&CK](https://attack.mitre.org)         |TAXII 2.1 API|Groups, TTPs, Software, Campaigns|Nightly         |
-|[ETDA Threat Group Cards](https://apt.etda.or.th)|Scraper      |Aliases, Origins, Operations     |Nightly         |
-|[AlienVault OTX](https://otx.alienvault.com)     |REST API     |IOCs, Pulses, Campaigns          |Nightly         |
-|[MISP](https://www.misp-project.org)             |REST API     |Threat Actors, Attributes        |On demand       |
-|[OpenCTI](https://www.opencti.io)                |GraphQL API  |Actors, Relations, TTPs          |On demand       |
+| Source                                           | Type            | Entities                          | Update Frequency |
+|--------------------------------------------------|-----------------|-----------------------------------|------------------|
+| [MITRE ATT&CK](https://attack.mitre.org)         | STIX bundle     | Groups, TTPs, Software, Campaigns | Nightly          |
+| [ETDA Threat Group Cards](https://apt.etda.or.th)| Scraper         | Aliases, Origins, Operations      | Nightly          |
+| [AlienVault OTX](https://otx.alienvault.com)     | REST API        | IOCs, Pulses, Campaigns           | Nightly          |
+| [MISP](https://www.misp-project.org)             | REST API        | Threat Actors, Attributes         | On demand        |
+| [OpenCTI](https://www.opencti.io)                | GraphQL API     | Actors, Relations, TTPs           | On demand        |
 
 All data is **TLP:WHITE**. Attribution is approximate and for educational purposes only.
 
@@ -44,9 +42,9 @@ All data is **TLP:WHITE**. Attribution is approximate and for educational purpos
 
 ### Prerequisites
 
-- Node.js 18+
-- Python 3.11+
-- Docker + Docker Compose
+- Node.js 20+
+- pnpm 9+ (`npm install -g pnpm`)
+- A [Supabase](https://supabase.com) project (free tier works)
 
 ### Run locally
 
@@ -55,29 +53,41 @@ All data is **TLP:WHITE**. Attribution is approximate and for educational purpos
 git clone https://github.com/threatdex/threatdex.git
 cd threatdex
 
-# Copy environment variables
+# Install dependencies
+pnpm install
+
+# Copy environment variables and fill in your Supabase credentials
 cp .env.example .env
 
-# Start everything (Postgres, Redis, API, Web)
-docker compose up
+# Start the dev server
+pnpm dev
 
 # Open in browser
-open http://localhost:3000
+open http://localhost:5173
 ```
 
-That’s it. The database seeds automatically with ~130 threat actors from MITRE ATT&CK on first run.
-
-### Manual setup (without Docker)
+Apply the database schema by running the migrations in `supabase/migrations/` against your Supabase project, or use the Supabase CLI:
 
 ```bash
-# Install frontend dependencies
-cd apps/web && pnpm install && pnpm dev
+supabase db push
+```
 
-# Install backend dependencies
-cd apps/api && pip install -r requirements.txt && uvicorn main:app --reload
+### Seed with real data
 
-# Run a manual sync from MITRE
-cd workers/mitre-sync && python sync.py
+Workers are TypeScript scripts run with `tsx`. No separate server process required.
+
+```bash
+# Sync from MITRE ATT&CK (no API key required)
+pnpm workers:mitre
+
+# Sync from ETDA
+pnpm workers:etda
+
+# Sync from AlienVault OTX (requires OTX_API_KEY in .env)
+pnpm workers:otx
+
+# Run all workers in sequence
+pnpm workers:all
 ```
 
 -----
@@ -86,73 +96,54 @@ cd workers/mitre-sync && python sync.py
 
 ```
 threatdex/
-├── apps/
-│   ├── web/              # Next.js 14 frontend (App Router)
-│   └── api/              # FastAPI backend
-├── packages/
-│   ├── schema/           # Shared TypeScript types + Zod schemas
-│   └── ui/               # Card components (reusable)
-├── workers/
-│   ├── mitre-sync/       # TAXII 2.1 ingestion from MITRE ATT&CK
-│   ├── etda-sync/        # ETDA threat group card scraper
-│   └── image-gen/        # AI hero image generation queue
-├── infra/                # Docker Compose, Terraform
-└── docs/                 # Architecture diagrams, API reference
+├── app/               # React Router v7 application
+│   ├── components/    # Card UI components (CardFront, CardBack, etc.)
+│   ├── routes/        # Page routes (_index.tsx, actors.$id.tsx)
+│   ├── lib/           # Supabase client helpers
+│   └── schema/        # Zod schemas + TypeScript types (canonical data model)
+├── workers/           # TypeScript data ingestion scripts
+│   ├── mitre-sync.ts  # MITRE ATT&CK STIX bundle ingestion
+│   ├── etda-sync.ts   # ETDA APT scraper
+│   ├── otx-sync.ts    # AlienVault OTX connector
+│   ├── image-gen.ts   # AI hero image generation
+│   └── shared/        # Shared utilities (dedup, rarity, models, Supabase client)
+├── supabase/
+│   └── migrations/    # PostgreSQL schema + RLS policies
+├── tests/             # Vitest unit tests + Playwright e2e tests
+└── docs/              # Architecture, API reference, data sources
 ```
 
 ```mermaid
 graph TD
-    A[MITRE ATT&CK TAXII] --> D[Ingestion Workers]
+    A[MITRE ATT&CK STIX] --> D[TypeScript Workers]
     B[ETDA Scraper] --> D
     C[OTX / MISP / OpenCTI] --> D
-    D --> E[(Postgres)]
-    E --> F[FastAPI]
-    F --> G[Next.js Frontend]
-    F --> H[Public REST API]
-    I[Redis] --> D
+    D --> E[(Supabase / PostgreSQL)]
+    E --> F[React Router Loaders]
+    F --> G[Card UI]
+    H[GitHub Actions Cron] --> D
 ```
-
------
-
-## 🔌 API
-
-ThreatDex exposes a public REST API for integrations.
-
-```bash
-# List all actors with filters
-GET /api/actors?country=Russia&motivation=Espionage
-
-# Get a single actor
-GET /api/actors/apt28
-
-# Search by name, alias, or tool
-GET /api/search?q=fancy+bear
-
-# Get card assets
-GET /api/actors/apt28/card/front.png
-GET /api/actors/apt28/card/back.png
-```
-
-Full API reference: <docs/API.md>
 
 -----
 
 ## ⚙️ Environment Variables
 
 ```bash
-# Required
-DATABASE_URL=postgresql://user:password@localhost:5432/threatdex
-REDIS_URL=redis://localhost:6379
+# Supabase (required)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJ...          # Public, browser-safe
+SUPABASE_SERVICE_KEY=eyJ...       # Private, server-side + workers only
 
 # Optional — enables enrichment from these sources
 OTX_API_KEY=              # AlienVault OTX
-SOCRADAR_API_KEY=         # SOCRadar XTI
 OPENAI_API_KEY=           # AI hero image generation
 MISP_URL=                 # Your MISP instance
 MISP_API_KEY=
 OPENCTI_URL=              # Your OpenCTI instance
 OPENCTI_API_KEY=
 ```
+
+See `.env.example` for the full list.
 
 -----
 
@@ -161,7 +152,7 @@ OPENCTI_API_KEY=
 Contributions are very welcome. The best places to start:
 
 - **Add a data source connector** — see <CONTRIBUTING.md> for the connector template
-- **Improve card data** — spot an error or missing alias? Open a PR against `data/overrides/`
+- **Improve card data** — spot an error or missing alias? Open a PR
 - **Frontend polish** — new filter types, card animations, export formats
 - **Good first issues** — tagged [`good first issue`](https://github.com/threatdex/threatdex/issues?q=is%3Aissue+label%3A%22good+first+issue%22) in the issue tracker
 
