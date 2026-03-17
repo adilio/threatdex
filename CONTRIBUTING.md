@@ -21,14 +21,14 @@ high-quality pull request.
 
 ## Prerequisites
 
-| Tool        | Version  | Install                           |
-|-------------|----------|-----------------------------------|
-| Node.js     | >= 20    | https://nodejs.org                |
-| pnpm        | >= 9     | `npm install -g pnpm`             |
-| Python      | 3.11+    | https://www.python.org            |
-| Docker      | latest   | https://docs.docker.com/get-docker/ |
-| Docker Compose | v2+   | Bundled with Docker Desktop       |
-| Git         | any      | https://git-scm.com               |
+| Tool    | Version | Install                   |
+|---------|---------|---------------------------|
+| Node.js | >= 20   | https://nodejs.org        |
+| pnpm    | >= 9    | `npm install -g pnpm`     |
+| Git     | any     | https://git-scm.com       |
+
+You also need a [Supabase](https://supabase.com) project (free tier works) to
+run the app locally. No Docker or Python required.
 
 ---
 
@@ -39,47 +39,35 @@ high-quality pull request.
 git clone https://github.com/your-org/threatdex.git
 cd threatdex
 
-# 2. Install JavaScript dependencies (all workspaces)
+# 2. Install dependencies
 pnpm install
 
-# 3. Copy the environment template and fill in your values
+# 3. Copy the environment template and fill in your Supabase credentials
 cp .env.example .env
-# Edit .env — at minimum, no changes are needed for local dev with Docker Compose
+# Edit .env — add SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY
 
-# 4. Start the full stack
-docker compose -f infra/docker-compose.yml up
+# 4. Apply the database schema
+#    Option A: Supabase CLI
+supabase db push
+#    Option B: Paste migrations/001_initial_schema.sql and migrations/002_rls_policies.sql
+#              into the Supabase SQL editor in your project dashboard
 
-# Services:
-#   PostgreSQL  → localhost:5432
-#   Redis       → localhost:6379
-#   FastAPI     → http://localhost:8000
-#   Next.js     → http://localhost:3000
-```
-
-The first `docker compose up` will build the API and web images. Subsequent starts
-are fast.
-
-### Running services individually (without Docker)
-
-**API (FastAPI):**
-```bash
-cd apps/api
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-
-**Web (Next.js):**
-```bash
-cd apps/web
+# 5. Start the dev server
 pnpm dev
+# → http://localhost:5173
 ```
 
-**Celery worker:**
+### Seed with real data
+
 ```bash
-cd apps/api
-celery -A celery_app worker --loglevel=info
+# Sync from MITRE ATT&CK (no API key required)
+pnpm workers:mitre
+
+# Sync from ETDA
+pnpm workers:etda
+
+# Run all sources in sequence
+pnpm workers:all
 ```
 
 ---
@@ -107,12 +95,11 @@ git checkout -b feature/issue-42-my-feature
 # 3. Make changes, commit often with conventional commit messages:
 git commit -m "feat: add MISP galaxy cluster ingestion"
 git commit -m "fix: deduplicate aliases before upsert"
-git commit -m "test: add pytest coverage for MISP connector"
+git commit -m "test: add Vitest coverage for MISP worker"
 git commit -m "docs: document MISP setup in DATA_SOURCES.md"
 
 # 4. Before opening a PR, run all checks:
-pnpm lint && pnpm test          # frontend + packages
-cd apps/api && ruff check . && pytest   # backend
+pnpm lint && pnpm test
 
 # 5. Push and open a PR against dev
 git push origin feature/issue-42-my-feature
@@ -124,16 +111,16 @@ git push origin feature/issue-42-my-feature
 
 ### Conventional Commit Types
 
-| Prefix   | When to use                                      |
-|----------|--------------------------------------------------|
-| `feat:`  | New feature or capability                        |
-| `fix:`   | Bug fix                                          |
-| `chore:` | Maintenance — deps, config, tooling              |
-| `test:`  | Adding or updating tests                         |
-| `docs:`  | Documentation changes                            |
-| `refactor:` | Code restructuring without behaviour change  |
-| `perf:`  | Performance improvement                          |
-| `ci:`    | CI/CD workflow changes                           |
+| Prefix      | When to use                                    |
+|-------------|------------------------------------------------|
+| `feat:`     | New feature or capability                      |
+| `fix:`      | Bug fix                                        |
+| `chore:`    | Maintenance — deps, config, tooling            |
+| `test:`     | Adding or updating tests                       |
+| `docs:`     | Documentation changes                          |
+| `refactor:` | Code restructuring without behaviour change    |
+| `perf:`     | Performance improvement                        |
+| `ci:`       | CI/CD workflow changes                         |
 
 ---
 
@@ -142,228 +129,248 @@ git push origin feature/issue-42-my-feature
 ### TypeScript / JavaScript
 
 - Formatter: **Prettier** (config in root `.prettierrc` if present, otherwise defaults)
-- Linter: **ESLint** (config per package)
+- Linter: **ESLint** with `typescript-eslint`
 - Run: `pnpm lint` from the repo root
 
 Key rules:
-- No `console.log` in committed code — use a proper logger
-- Prefer named exports over default exports in library packages
+- No `console.log` in committed code (workers may use `console.warn`/`console.error` for operational logging)
 - All React components must have explicit TypeScript prop types
 - Use `const` by default; `let` only when reassignment is needed
-
-### Python
-
-- Formatter + linter: **Ruff** (`ruff check` and `ruff format`)
-- Run: `ruff check apps/api workers` from the repo root
-
-Key rules:
-- No `print()` debug statements — use `logging`
-- All functions must have type annotations
-- Pydantic v2 models for all request/response shapes
-- SQLAlchemy 2 style (`select()`, `session.scalars()`)
+- Prefer named exports in shared modules
 
 ---
 
 ## Testing
 
-### Frontend (Vitest + Playwright)
+### Unit tests (Vitest)
 
 ```bash
-# Unit tests (Vitest)
-pnpm test
+pnpm test         # run once
+pnpm test:watch   # watch mode
+```
 
-# End-to-end tests (Playwright) — requires running stack
-pnpm exec playwright test
+Requirements:
+- Every new React component needs a Vitest unit test
+- Every new worker needs a test that mocks `fetch` (or the Supabase client) and
+  verifies that normalised output matches the `ThreatActor` schema
+- Tests live in `tests/` (mirroring the source directory structure)
+
+### End-to-end tests (Playwright)
+
+```bash
+pnpm test:e2e    # requires the app to be running (pnpm dev in another terminal)
 ```
 
 Requirements:
 - Every new page route needs a Playwright smoke test
-- Every new component needs a Vitest unit test
-- Tests live in `__tests__/` or alongside the component as `*.test.ts(x)`
-
-### Backend (pytest)
-
-```bash
-cd apps/api
-pytest tests/ --cov=. --cov-report=term-missing
-```
-
-Requirements:
-- Every new endpoint needs a happy-path test and an error-case test
-- Worker tests must mock the upstream HTTP call (use `httpx` or `responses`)
-- Worker tests must assert that normalised output matches the `ThreatActor` schema
-- Do not merge if coverage drops below the current baseline
 
 ---
 
 ## Adding a CTI Source Connector
 
-Use this template when implementing a new CTI data source.
+Use this template when implementing a new TypeScript CTI data source worker.
 
 ### File structure
 
 ```
 workers/
-└── my-source/
-    ├── __init__.py
-    ├── connector.py      ← main ingestion logic
-    ├── normalise.py      ← map source schema → ThreatActor
-    ├── requirements.txt  ← source-specific deps (if any)
-    └── tests/
-        └── test_connector.py
+└── my-source.ts          ← main ingestion script
+tests/workers/
+└── my-source.test.ts     ← Vitest tests
 ```
 
-### connector.py template
+Add the run command to `package.json` scripts:
 
-```python
-"""
-My Source connector for ThreatDex.
-
-Ingests threat actor data from My Source and normalises it into the
-canonical ThreatActor schema.
-
-Required env vars:
-    MY_SOURCE_API_KEY  — obtain from https://my-source.example.com/api
-
-Feature-flagged: if MY_SOURCE_API_KEY is not set, this connector is skipped.
-"""
-import logging
-import os
-from datetime import datetime, timezone
-from typing import List
-
-from apps.api.schemas import ThreatActorCreate, SourceAttribution
-
-logger = logging.getLogger(__name__)
-
-SOURCE_NAME = "my-source"
-BASE_URL = "https://api.my-source.example.com/v1"
-
-
-def is_enabled() -> bool:
-    """Return True if this connector is configured and should run."""
-    key = os.getenv("MY_SOURCE_API_KEY")
-    if not key:
-        logger.warning(
-            "MY_SOURCE_API_KEY is not set — My Source connector is disabled."
-        )
-        return False
-    return True
-
-
-async def fetch_actors() -> List[ThreatActorCreate]:
-    """
-    Fetch and normalise threat actors from My Source.
-
-    Returns an empty list if the connector is disabled or the upstream
-    call fails — never raises an exception that would crash the worker.
-    """
-    if not is_enabled():
-        return []
-
-    try:
-        raw_actors = await _fetch_raw()
-        return [_normalise(a) for a in raw_actors]
-    except Exception:
-        logger.exception("My Source sync failed — skipping this run.")
-        return []
-
-
-async def _fetch_raw() -> List[dict]:
-    """Make the upstream API call and return raw response objects."""
-    import httpx
-
-    api_key = os.getenv("MY_SOURCE_API_KEY")
-    async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.get(
-            f"{BASE_URL}/actors",
-            headers={"Authorization": f"Bearer {api_key}"},
-        )
-        response.raise_for_status()
-        return response.json()["data"]
-
-
-def _normalise(raw: dict) -> ThreatActorCreate:
-    """Map a raw My Source actor object to ThreatActorCreate."""
-    return ThreatActorCreate(
-        id=raw["slug"],
-        canonicalName=raw["name"],
-        aliases=raw.get("aliases", []),
-        description=raw.get("description", ""),
-        # ... map remaining fields ...
-        sources=[
-            SourceAttribution(
-                source="manual",          # use the closest registered source type
-                sourceId=str(raw["id"]),
-                fetchedAt=datetime.now(timezone.utc).isoformat(),
-                url=f"https://my-source.example.com/actors/{raw['slug']}",
-            )
-        ],
-        tlp="WHITE",
-        lastUpdated=datetime.now(timezone.utc).isoformat(),
-    )
+```json
+"workers:mysource": "tsx workers/my-source.ts"
 ```
 
-### tests/test_connector.py template
+### Worker template
 
-```python
-"""Tests for the My Source connector."""
-import pytest
-from unittest.mock import AsyncMock, patch
+```typescript
+/**
+ * My Source connector for ThreatDex.
+ *
+ * Required env vars:
+ *   MY_SOURCE_API_KEY  — obtain from https://my-source.example.com/api
+ *
+ * Feature-flagged: exits cleanly if MY_SOURCE_API_KEY is not set.
+ *
+ * Usage:
+ *   npx tsx workers/my-source.ts
+ */
 
-from workers.my_source.connector import fetch_actors
+import { supabase, logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
+import { findMatchingActor, mergeActors } from "./shared/dedup.js"
+import { computeThreatLevel, computeRarity } from "./shared/rarity.js"
+import { toDbRecord } from "./shared/models.js"
+import type { ThreatActorData, SourceAttribution } from "./shared/models.js"
 
+const BASE_URL = "https://api.my-source.example.com/v1"
 
-@pytest.fixture
-def mock_raw_response():
-    return {
-        "data": [
-            {
-                "id": 1,
-                "slug": "example-apt",
-                "name": "Example APT",
-                "aliases": ["APT-Example"],
-                "description": "A fictional threat actor for testing.",
-            }
-        ]
+function isEnabled(): boolean {
+  if (!process.env.MY_SOURCE_API_KEY) {
+    console.warn("MY_SOURCE_API_KEY is not set — My Source connector is disabled.")
+    return false
+  }
+  return true
+}
+
+async function fetchRaw(): Promise<Record<string, unknown>[]> {
+  const response = await fetch(`${BASE_URL}/actors`, {
+    headers: { Authorization: `Bearer ${process.env.MY_SOURCE_API_KEY}` },
+  })
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  const json = (await response.json()) as { data: Record<string, unknown>[] }
+  return json.data
+}
+
+function normalise(raw: Record<string, unknown>): ThreatActorData {
+  const now = new Date().toISOString()
+  const name = String(raw["name"] ?? "Unknown")
+
+  const sources: SourceAttribution[] = [{
+    source: "manual",
+    sourceId: String(raw["id"]),
+    fetchedAt: now,
+    url: `https://my-source.example.com/actors/${raw["slug"]}`,
+  }]
+
+  const sophistication = "Medium"
+  const ttpsCount = 0
+  const campaignsCount = 0
+  const threatLevel = computeThreatLevel({ sophistication, ttpsCount, campaignsCount })
+  const rarity = computeRarity({ threatLevel, sophistication, sourcesCount: 1 })
+
+  return {
+    id: String(raw["slug"]),
+    canonicalName: name,
+    aliases: (raw["aliases"] as string[]) ?? [],
+    description: String(raw["description"] ?? ""),
+    motivation: ["espionage"],
+    threatLevel,
+    sophistication,
+    sectors: [],
+    geographies: [],
+    tools: [],
+    ttps: [],
+    campaigns: [],
+    rarity,
+    sources,
+    tlp: "WHITE",
+    lastUpdated: now,
+  }
+}
+
+async function main(): Promise<void> {
+  if (!isEnabled()) return
+
+  const logId = await logSyncStart("manual")
+  let recordsSynced = 0
+
+  try {
+    const rawActors = await fetchRaw()
+
+    for (const raw of rawActors) {
+      try {
+        let actor = normalise(raw)
+
+        const existingId = await findMatchingActor(actor)
+        if (existingId && existingId !== actor.id) {
+          const { data: existingRow } = await supabase
+            .from("actors").select("*").eq("id", existingId).single()
+          if (existingRow) {
+            actor = mergeActors(existingRow as Record<string, unknown>, actor)
+          }
+        }
+
+        const { error } = await supabase
+          .from("actors").upsert(toDbRecord(actor), { onConflict: "id" })
+
+        if (error) {
+          console.warn(`Upsert error for ${actor.canonicalName}:`, error.message)
+        } else {
+          recordsSynced++
+        }
+      } catch (e) {
+        console.warn(`Failed to process actor — skipping:`, e)
+      }
     }
 
+    await logSyncComplete(logId, recordsSynced)
+    console.log(`My Source sync complete — ${recordsSynced} actors upserted`)
+  } catch (e) {
+    await logSyncError(logId, String(e))
+    throw e
+  }
+}
 
-@pytest.mark.asyncio
-async def test_fetch_actors_happy_path(mock_raw_response, monkeypatch):
-    """Connector returns normalised actors when API call succeeds."""
-    monkeypatch.setenv("MY_SOURCE_API_KEY", "test-key")
-
-    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
-        mock_get.return_value.json.return_value = mock_raw_response
-        mock_get.return_value.raise_for_status = lambda: None
-
-        actors = await fetch_actors()
-
-    assert len(actors) == 1
-    assert actors[0].id == "example-apt"
-    assert actors[0].canonicalName == "Example APT"
-    assert "APT-Example" in actors[0].aliases
-
-
-@pytest.mark.asyncio
-async def test_fetch_actors_no_api_key(monkeypatch):
-    """Connector returns empty list when API key is not set."""
-    monkeypatch.delenv("MY_SOURCE_API_KEY", raising=False)
-    actors = await fetch_actors()
-    assert actors == []
-
-
-@pytest.mark.asyncio
-async def test_fetch_actors_network_error(monkeypatch):
-    """Connector returns empty list on network failure — does not raise."""
-    monkeypatch.setenv("MY_SOURCE_API_KEY", "test-key")
-
-    with patch("httpx.AsyncClient.get", side_effect=Exception("network error")):
-        actors = await fetch_actors()
-
-    assert actors == []
+main().catch(console.error)
 ```
+
+### Test template
+
+```typescript
+// tests/workers/my-source.test.ts
+import { describe, it, expect, vi, beforeEach } from "vitest"
+
+const mockUpsert = vi.fn().mockResolvedValue({ error: null })
+const mockSelect = vi.fn().mockReturnValue({
+  eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: null }) }),
+})
+
+vi.mock("../../workers/shared/supabase.js", () => ({
+  supabase: {
+    from: vi.fn().mockReturnValue({ upsert: mockUpsert, select: mockSelect }),
+  },
+  logSyncStart: vi.fn().mockResolvedValue("log-id"),
+  logSyncComplete: vi.fn().mockResolvedValue(undefined),
+  logSyncError: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock("../../workers/shared/dedup.js", () => ({
+  findMatchingActor: vi.fn().mockResolvedValue(null),
+  mergeActors: vi.fn((existing, incoming) => incoming),
+}))
+
+describe("my-source worker", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("skips when API key is not set", async () => {
+    delete process.env.MY_SOURCE_API_KEY
+    // import and run worker — it should not call supabase
+    expect(mockUpsert).not.toHaveBeenCalled()
+  })
+
+  it("normalises actor to ThreatActor schema", () => {
+    // test your normalise() function directly
+    const raw = {
+      id: 1,
+      slug: "example-apt",
+      name: "Example APT",
+      aliases: ["APT-Example"],
+      description: "A fictional threat actor for testing.",
+    }
+    // import normalise and call it
+    // assert fields match ThreatActor schema
+  })
+})
+```
+
+### Register in the nightly cron
+
+Add a step to `.github/workflows/sync.yml` under the sync job:
+
+```yaml
+- name: Sync My Source
+  run: pnpm workers:mysource
+  env:
+    SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+    SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    MY_SOURCE_API_KEY: ${{ secrets.MY_SOURCE_API_KEY }}
+```
+
+Then document the source in `docs/DATA_SOURCES.md` following the template there.
 
 ---
 
@@ -375,10 +382,9 @@ Before requesting review, confirm:
 - [ ] PR targets `dev`, not `main`
 - [ ] PR title follows format: `[Issue #{N}] Brief description`
 - [ ] PR description uses the template from `CLAUDE.md` section 9
-- [ ] All new code has tests (unit + integration as appropriate)
-- [ ] `pnpm lint && pnpm test` passes (frontend/packages)
-- [ ] `ruff check . && pytest` passes (backend/workers)
-- [ ] No `console.log` or `print()` debug statements
+- [ ] All new code has tests
+- [ ] `pnpm lint && pnpm test` passes
+- [ ] No `console.log` debug statements
 - [ ] No secrets committed — all credentials read from environment
 - [ ] `CLAUDE.md` has not been modified (requires separate PR)
 - [ ] If UI changed: screenshots included in PR description
@@ -393,7 +399,7 @@ Please open a GitHub Issue with:
 2. Steps to reproduce
 3. Expected behaviour
 4. Actual behaviour
-5. Environment details (OS, Node version, Python version, Docker version)
+5. Environment details (OS, Node.js version)
 
 For security vulnerabilities, do **not** open a public issue. Follow the
 responsible disclosure process in [SECURITY.md](SECURITY.md).
