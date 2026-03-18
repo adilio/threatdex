@@ -212,6 +212,84 @@ a {
   overflow: hidden;
 }
 
+.dex-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at top, rgba(2, 84, 236, 0.2), transparent 35%),
+    rgba(1, 18, 63, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.dex-modal-panel {
+  width: min(96vw, 1280px);
+  max-height: min(94vh, 980px);
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
+  border-radius: 2rem;
+  background: var(--surface-panel-strong);
+  box-shadow:
+    0 32px 90px -42px rgba(1, 18, 63, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.dex-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.dex-modal-content {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(280px, 0.55fr);
+  gap: 1.25rem;
+  padding: 1.5rem;
+  max-height: calc(min(94vh, 980px) - 92px);
+  overflow: auto;
+}
+
+.dex-modal-card-wrap {
+  min-height: 0;
+  aspect-ratio: 5 / 7;
+  width: min(100%, 760px);
+  justify-self: center;
+  perspective: 1800px;
+}
+
+@media (max-width: 1024px) {
+  .dex-modal-content {
+    grid-template-columns: 1fr;
+  }
+
+  .dex-modal-card-wrap {
+    width: 100%;
+    max-width: 760px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dex-modal-overlay {
+    padding: 0.75rem;
+  }
+
+  .dex-modal-panel {
+    width: 100%;
+    border-radius: 1.5rem;
+  }
+
+  .dex-modal-toolbar {
+    flex-direction: column;
+    align-items: start;
+  }
+}
+
 .rarity-glow-mythic {
   box-shadow: 0 0 12px #ffff00, 0 0 30px rgba(255, 255, 0, 0.25);
 }

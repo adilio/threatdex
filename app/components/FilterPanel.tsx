@@ -23,6 +23,7 @@ interface FilterPanelProps {
   initialCountry?: string
   initialMotivation?: string
   initialRarity?: string
+  initialSort?: string
   className?: string
 }
 
@@ -30,6 +31,7 @@ export function FilterPanel({
   initialCountry = "",
   initialMotivation = "",
   initialRarity = "",
+  initialSort = "threat_desc",
   className,
 }: FilterPanelProps) {
   const navigate = useNavigate()
@@ -62,12 +64,16 @@ export function FilterPanel({
     params.delete("country")
     params.delete("motivation")
     params.delete("rarity")
+    params.delete("sort")
     params.delete("offset")
     navigate(`?${params.toString()}`)
   }, [navigate, searchParams])
 
   const hasActiveFilters =
-    Boolean(initialCountry) || Boolean(initialMotivation) || Boolean(initialRarity)
+    Boolean(initialCountry) ||
+    Boolean(initialMotivation) ||
+    Boolean(initialRarity) ||
+    initialSort !== "threat_desc"
 
   return (
     <div className={clsx("dex-panel flex flex-wrap items-center gap-3 px-4 py-4", className)}>
@@ -124,6 +130,18 @@ export function FilterPanel({
             {label}
           </option>
         ))}
+      </select>
+
+      <select
+        value={initialSort}
+        onChange={(event) => updateParam("sort", event.target.value)}
+        aria-label="Sort actors"
+        className="rounded-full border border-app-border bg-app-panel px-4 py-2.5 text-sm text-app-text outline-none"
+      >
+        <option value="threat_desc">Biggest threats</option>
+        <option value="recent_desc">Most recent activity</option>
+        <option value="updated_desc">Recently updated</option>
+        <option value="name_asc">Name A-Z</option>
       </select>
 
       {hasActiveFilters && (

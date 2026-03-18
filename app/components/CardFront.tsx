@@ -7,6 +7,7 @@ import { ThreatLevelBar } from "./ThreatLevelBar"
 interface CardFrontProps {
   actor: ThreatActor
   className?: string
+  variant?: "compact" | "expanded"
 }
 
 function getRarityBorderStyle(rarity: Rarity): React.CSSProperties {
@@ -14,7 +15,7 @@ function getRarityBorderStyle(rarity: Rarity): React.CSSProperties {
 
   return {
     border: `2px solid ${rarityColor}`,
-    boxShadow: `0 0 16px ${rarityColor}66, 0 18px 45px -28px ${rarityColor}66`,
+    boxShadow: `0 0 18px ${rarityColor}66, 0 28px 60px -36px ${rarityColor}77`,
   }
 }
 
@@ -31,9 +32,11 @@ function getCountryFlag(countryCode?: string) {
 function HeroPlaceholder({
   actor,
   rarity,
+  variant,
 }: {
   actor: ThreatActor
   rarity: Rarity
+  variant: "compact" | "expanded"
 }) {
   const initials = actor.canonicalName
     .split(/\s+/)
@@ -44,14 +47,17 @@ function HeroPlaceholder({
 
   const gradientMap: Record<Rarity, string> = {
     MYTHIC:
-      "linear-gradient(135deg, rgba(2,84,236,0.92) 0%, rgba(255,255,0,0.85) 100%)",
+      "linear-gradient(135deg, rgba(2,84,236,0.92) 0%, rgba(255,255,0,0.86) 100%)",
     LEGENDARY:
-      "linear-gradient(135deg, rgba(23,58,170,0.94) 0%, rgba(255,155,190,0.9) 100%)",
+      "linear-gradient(135deg, rgba(23,58,170,0.96) 0%, rgba(255,155,190,0.92) 100%)",
     EPIC:
       "linear-gradient(135deg, rgba(23,58,170,0.92) 0%, rgba(151,187,255,0.9) 100%)",
     RARE:
-      "linear-gradient(135deg, rgba(2,84,236,0.86) 0%, rgba(97,151,255,0.92) 100%)",
+      "linear-gradient(135deg, rgba(2,84,236,0.9) 0%, rgba(97,151,255,0.96) 100%)",
   }
+
+  const fontSize = variant === "expanded" ? "92px" : "52px"
+  const flagSize = variant === "expanded" ? "78px" : "46px"
 
   return (
     <div
@@ -63,7 +69,7 @@ function HeroPlaceholder({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: "10px",
+        gap: "12px",
         position: "relative",
         overflow: "hidden",
       }}
@@ -74,21 +80,31 @@ function HeroPlaceholder({
           inset: 0,
           backgroundImage:
             "linear-gradient(to right, var(--card-grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--card-grid-line) 1px, transparent 1px)",
-          backgroundSize: "26px 26px",
-          opacity: 0.75,
+          backgroundSize: variant === "expanded" ? "32px 32px" : "26px 26px",
+          opacity: 0.78,
         }}
       />
-      <span style={{ fontSize: "46px", lineHeight: 1, zIndex: 1 }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: "auto 0 12% 0",
+          height: variant === "expanded" ? "120px" : "72px",
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.34) 18%, rgba(255,255,255,0.1) 52%, transparent 100%)",
+          filter: "blur(16px)",
+        }}
+      />
+      <span style={{ fontSize: flagSize, lineHeight: 1, zIndex: 1 }}>
         {getCountryFlag(actor.countryCode)}
       </span>
       <span
         style={{
           fontFamily: "Orbitron, sans-serif",
-          fontSize: "52px",
+          fontSize,
           fontWeight: 900,
           color: rarity === "MYTHIC" ? "#01123F" : "#FFFFFF",
           letterSpacing: "0.08em",
-          textShadow: "0 6px 24px rgba(1,18,63,0.22)",
+          textShadow: "0 8px 28px rgba(1,18,63,0.22)",
           zIndex: 1,
         }}
       >
@@ -97,8 +113,8 @@ function HeroPlaceholder({
       <span
         style={{
           fontFamily: "JetBrains Mono, monospace",
-          fontSize: "10px",
-          color: "rgba(255,255,255,0.8)",
+          fontSize: variant === "expanded" ? "12px" : "10px",
+          color: "rgba(255,255,255,0.82)",
           letterSpacing: "0.18em",
           textTransform: "uppercase",
           zIndex: 1,
@@ -118,7 +134,13 @@ const MOTIVATION_COLORS: Record<string, { bg: string; text: string }> = {
   military: { bg: "rgba(197,107,164,0.18)", text: "#8C2B6A" },
 }
 
-function MotivationChip({ motivation }: { motivation: string }) {
+function MotivationChip({
+  motivation,
+  compact = false,
+}: {
+  motivation: string
+  compact?: boolean
+}) {
   const style = MOTIVATION_COLORS[motivation] ?? {
     bg: "rgba(2,84,236,0.14)",
     text: "#0254EC",
@@ -134,9 +156,9 @@ function MotivationChip({ motivation }: { motivation: string }) {
         border: `1px solid ${style.text}30`,
         borderRadius: "999px",
         fontFamily: "JetBrains Mono, monospace",
-        fontSize: "10px",
+        fontSize: compact ? "10px" : "11px",
         fontWeight: 700,
-        padding: "4px 9px",
+        padding: compact ? "4px 9px" : "6px 12px",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
         whiteSpace: "nowrap",
@@ -147,24 +169,69 @@ function MotivationChip({ motivation }: { motivation: string }) {
   )
 }
 
+function InfoPill({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: "16px",
+        border: "1px solid rgba(2,84,236,0.12)",
+        background: "var(--card-panel)",
+        padding: "12px 14px",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "JetBrains Mono, monospace",
+          fontSize: "10px",
+          color: "var(--text-muted)",
+          textTransform: "uppercase",
+          letterSpacing: "0.14em",
+          marginBottom: "6px",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontWeight: 800,
+          fontSize: "16px",
+          lineHeight: 1.25,
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  )
+}
+
 function SophisticationPips({
   score,
   max = 5,
+  size = "compact",
 }: {
   score: number
   max?: number
+  size?: "compact" | "expanded"
 }) {
+  const dotSize = size === "expanded" ? "10px" : "8px"
+
   return (
     <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
       {Array.from({ length: max }, (_, index) => (
         <div
           key={index}
           style={{
-            width: "8px",
-            height: "8px",
+            width: dotSize,
+            height: dotSize,
             borderRadius: "999px",
             backgroundColor: index < score ? "#6197FF" : "rgba(23,58,170,0.2)",
-            boxShadow: index < score ? "0 0 6px rgba(97,151,255,0.45)" : undefined,
+            boxShadow: index < score ? "0 0 8px rgba(97,151,255,0.55)" : undefined,
           }}
         />
       ))}
@@ -172,11 +239,48 @@ function SophisticationPips({
   )
 }
 
-export function CardFront({ actor, className }: CardFrontProps) {
+function AssetStatusBadge({
+  actor,
+  compact,
+}: {
+  actor: ThreatActor
+  compact: boolean
+}) {
+  const hasGenerated = Boolean(actor.imageUrl)
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        borderRadius: "999px",
+        border: "1px solid rgba(2,84,236,0.14)",
+        background: hasGenerated
+          ? "rgba(2,84,236,0.12)"
+          : "rgba(255,191,255,0.18)",
+        color: "var(--text-primary)",
+        fontFamily: "JetBrains Mono, monospace",
+        fontSize: compact ? "9px" : "10px",
+        fontWeight: 700,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        padding: compact ? "4px 8px" : "6px 10px",
+      }}
+    >
+      {hasGenerated ? "Generated Art" : "Dex Portrait"}
+    </span>
+  )
+}
+
+export function CardFront({
+  actor,
+  className,
+  variant = "compact",
+}: CardFrontProps) {
   const rarityBorder = getRarityBorderStyle(actor.rarity)
   const sophScore = getSophisticationScore(actor.sophistication)
-  const aliases = actor.aliases.slice(0, 2)
-  const motivations = actor.motivation.slice(0, 2)
+  const aliases = actor.aliases.slice(0, variant === "expanded" ? 4 : 2)
+  const motivations = actor.motivation.slice(0, variant === "expanded" ? 4 : 2)
   const activeWindow =
     actor.firstSeen && actor.lastSeen
       ? `${actor.firstSeen} - ${actor.lastSeen}`
@@ -185,6 +289,8 @@ export function CardFront({ actor, className }: CardFrontProps) {
         : actor.lastSeen
           ? `Until ${actor.lastSeen}`
           : "Unknown"
+
+  const compact = variant === "compact"
 
   return (
     <div
@@ -202,7 +308,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
       <div
         style={{
           background: "var(--card-header)",
-          padding: "12px 16px",
+          padding: compact ? "12px 16px" : "16px 22px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -210,37 +316,55 @@ export function CardFront({ actor, className }: CardFrontProps) {
           gap: "12px",
         }}
       >
-        <span
-          style={{
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: "11px",
-            color: "var(--text-muted)",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-          }}
-        >
-          {actor.mitreId ?? actor.id.toUpperCase()}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: compact ? "8px" : "10px" }}>
+          <span
+            style={{
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: compact ? "11px" : "12px",
+              color: "var(--text-muted)",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+            }}
+          >
+            {actor.mitreId ?? actor.id.toUpperCase()}
+          </span>
+          <AssetStatusBadge actor={actor} compact={compact} />
+        </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <span
             style={{
               fontFamily: "JetBrains Mono, monospace",
-              fontSize: "10px",
-              background: actor.tlp === "GREEN" ? "rgba(0,200,83,0.16)" : "rgba(2,84,236,0.1)",
+              fontSize: compact ? "10px" : "11px",
+              background:
+                actor.tlp === "GREEN"
+                  ? "rgba(0,200,83,0.16)"
+                  : "rgba(2,84,236,0.1)",
               color: actor.tlp === "GREEN" ? "#007a3d" : "var(--text-primary)",
-              border: `1px solid ${actor.tlp === "GREEN" ? "rgba(0,122,61,0.2)" : "rgba(2,84,236,0.14)"}`,
+              border: `1px solid ${
+                actor.tlp === "GREEN"
+                  ? "rgba(0,122,61,0.2)"
+                  : "rgba(2,84,236,0.14)"
+              }`,
               borderRadius: "999px",
-              padding: "4px 8px",
+              padding: compact ? "4px 8px" : "6px 10px",
               letterSpacing: "0.08em",
             }}
           >
             TLP:{actor.tlp}
           </span>
-          <RarityBadge rarity={actor.rarity} size="sm" />
+          <RarityBadge rarity={actor.rarity} size={compact ? "sm" : "md"} />
         </div>
       </div>
 
-      <div style={{ height: "42%", minHeight: 0, position: "relative", overflow: "hidden" }}>
+      <div
+        style={{
+          height: compact ? "42%" : "40%",
+          minHeight: 0,
+          position: "relative",
+          overflow: "hidden",
+          borderBottom: "1px solid rgba(2,84,236,0.08)",
+        }}
+      >
         {actor.imageUrl ? (
           <img
             src={actor.imageUrl}
@@ -248,7 +372,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
-          <HeroPlaceholder actor={actor} rarity={actor.rarity} />
+          <HeroPlaceholder actor={actor} rarity={actor.rarity} variant={variant} />
         )}
         <div
           style={{
@@ -261,11 +385,12 @@ export function CardFront({ actor, className }: CardFrontProps) {
 
       <div
         style={{
-          padding: "18px 16px 16px",
+          padding: compact ? "18px 16px 16px" : "24px 22px 22px",
           display: "flex",
           flexDirection: "column",
-          gap: "14px",
+          gap: compact ? "14px" : "18px",
           flex: 1,
+          overflowY: compact ? "hidden" : "auto",
         }}
       >
         <div>
@@ -274,16 +399,16 @@ export function CardFront({ actor, className }: CardFrontProps) {
               display: "flex",
               alignItems: "start",
               justifyContent: "space-between",
-              gap: "12px",
+              gap: compact ? "12px" : "18px",
             }}
           >
-            <div>
+            <div style={{ flex: 1 }}>
               <h3
                 style={{
                   margin: 0,
                   fontFamily: "Orbitron, sans-serif",
-                  fontSize: "24px",
-                  lineHeight: 1.05,
+                  fontSize: compact ? "24px" : "36px",
+                  lineHeight: 1.02,
                   letterSpacing: "0.03em",
                   textTransform: "uppercase",
                 }}
@@ -292,14 +417,14 @@ export function CardFront({ actor, className }: CardFrontProps) {
               </h3>
               <p
                 style={{
-                  margin: "6px 0 0",
-                  fontSize: "13px",
-                  lineHeight: 1.5,
+                  margin: "8px 0 0",
+                  fontSize: compact ? "13px" : "16px",
+                  lineHeight: 1.6,
                   color: "var(--text-muted)",
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 2,
-                  overflow: "hidden",
+                  display: compact ? "-webkit-box" : "block",
+                  WebkitBoxOrient: compact ? "vertical" : undefined,
+                  WebkitLineClamp: compact ? 2 : undefined,
+                  overflow: compact ? "hidden" : "visible",
                 }}
               >
                 {actor.tagline ?? actor.description}
@@ -309,17 +434,19 @@ export function CardFront({ actor, className }: CardFrontProps) {
               style={{
                 display: "grid",
                 placeItems: "center",
-                minWidth: "64px",
+                minWidth: compact ? "68px" : "92px",
                 aspectRatio: "1 / 1",
-                borderRadius: "18px",
-                background: "var(--surface-chip)",
+                borderRadius: compact ? "18px" : "24px",
+                background:
+                  "linear-gradient(180deg, rgba(2,84,236,0.1) 0%, rgba(255,191,255,0.22) 100%)",
                 border: "1px solid rgba(2,84,236,0.14)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.24)",
               }}
             >
               <span
                 style={{
                   fontFamily: "Orbitron, sans-serif",
-                  fontSize: "26px",
+                  fontSize: compact ? "28px" : "40px",
                   fontWeight: 900,
                   color: getRarityColor(actor.rarity),
                   letterSpacing: "0.08em",
@@ -332,115 +459,135 @@ export function CardFront({ actor, className }: CardFrontProps) {
           {aliases.length > 0 && (
             <p
               style={{
-                margin: "10px 0 0",
+                margin: compact ? "10px 0 0" : "14px 0 0",
                 fontFamily: "JetBrains Mono, monospace",
-                fontSize: "11px",
+                fontSize: compact ? "11px" : "12px",
                 color: "var(--text-muted)",
                 letterSpacing: "0.03em",
               }}
             >
               aka {aliases.join(" - ")}
-              {actor.aliases.length > aliases.length ? ` +${actor.aliases.length - aliases.length}` : ""}
+              {actor.aliases.length > aliases.length
+                ? ` +${actor.aliases.length - aliases.length}`
+                : ""}
             </p>
           )}
         </div>
 
         <div
           style={{
-            borderRadius: "18px",
+            borderRadius: compact ? "18px" : "24px",
             background: "var(--card-panel)",
             border: "1px solid rgba(2,84,236,0.12)",
-            padding: "14px",
+            padding: compact ? "14px" : "18px",
             display: "grid",
-            gap: "12px",
+            gap: compact ? "12px" : "16px",
           }}
         >
           <div>
             <div
               style={{
                 fontFamily: "JetBrains Mono, monospace",
-                fontSize: "10px",
+                fontSize: compact ? "10px" : "11px",
                 color: "var(--text-muted)",
                 textTransform: "uppercase",
                 letterSpacing: "0.14em",
-                marginBottom: "6px",
+                marginBottom: "8px",
               }}
             >
               Threat Level
             </div>
-            <ThreatLevelBar level={actor.threatLevel} />
+            <ThreatLevelBar level={actor.threatLevel} showLabel={!compact} />
           </div>
+
+          {compact ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+              }}
+            >
+              <InfoPill
+                label="Origin"
+                value={`${actor.country ?? "Unknown"} ${getCountryFlag(actor.countryCode)}`}
+              />
+              <InfoPill label="Active" value={activeWindow} />
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                gap: "14px",
+              }}
+            >
+              <InfoPill
+                label="Origin"
+                value={`${actor.country ?? "Unknown"} ${getCountryFlag(actor.countryCode)}`}
+              />
+              <InfoPill label="Active" value={activeWindow} />
+              <InfoPill
+                label="Sources"
+                value={`${actor.sources.length} feed${actor.sources.length === 1 ? "" : "s"}`}
+              />
+            </div>
+          )}
+
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
               gap: "12px",
+              borderTop: compact ? "none" : "1px solid rgba(2,84,236,0.08)",
+              paddingTop: compact ? 0 : "12px",
             }}
           >
             <div>
               <div
                 style={{
                   fontFamily: "JetBrains Mono, monospace",
-                  fontSize: "10px",
+                  fontSize: compact ? "10px" : "11px",
                   color: "var(--text-muted)",
                   textTransform: "uppercase",
                   letterSpacing: "0.14em",
                   marginBottom: "6px",
                 }}
               >
-                Origin
+                Sophistication
               </div>
-              <div style={{ fontWeight: 700, fontSize: "14px" }}>
-                {actor.country ?? "Unknown"} {getCountryFlag(actor.countryCode)}
-              </div>
+              <SophisticationPips
+                score={sophScore}
+                size={compact ? "compact" : "expanded"}
+              />
             </div>
-            <div>
-              <div
-                style={{
-                  fontFamily: "JetBrains Mono, monospace",
-                  fontSize: "10px",
-                  color: "var(--text-muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em",
-                  marginBottom: "6px",
-                }}
-              >
-                Active
-              </div>
-              <div style={{ fontWeight: 700, fontSize: "14px" }}>{activeWindow}</div>
-            </div>
-          </div>
-          <div>
-            <div
+            <span
               style={{
                 fontFamily: "JetBrains Mono, monospace",
-                fontSize: "10px",
+                fontSize: compact ? "11px" : "13px",
                 color: "var(--text-muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                marginBottom: "6px",
+                textAlign: "right",
               }}
             >
-              Sophistication
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-              <SophisticationPips score={sophScore} />
-              <span
-                style={{
-                  fontFamily: "JetBrains Mono, monospace",
-                  fontSize: "11px",
-                  color: "var(--text-muted)",
-                }}
-              >
-                {actor.sophistication}
-              </span>
-            </div>
+              {actor.sophistication}
+            </span>
           </div>
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: compact ? "8px" : "10px",
+          }}
+        >
           {motivations.map((motivation) => (
-            <MotivationChip key={motivation} motivation={motivation} />
+            <MotivationChip
+              key={motivation}
+              motivation={motivation}
+              compact={compact}
+            />
           ))}
         </div>
       </div>
