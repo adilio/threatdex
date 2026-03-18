@@ -4,6 +4,7 @@ import { getRarityColor } from "~/schema"
 interface CardBackProps {
   actor: ThreatActor
   className?: string
+  variant?: "compact" | "expanded"
 }
 
 function SectionHeader({ title }: { title: string }) {
@@ -14,7 +15,7 @@ function SectionHeader({ title }: { title: string }) {
         alignItems: "center",
         justifyContent: "space-between",
         gap: "8px",
-        marginBottom: "8px",
+        marginBottom: "10px",
       }}
     >
       <span
@@ -34,7 +35,13 @@ function SectionHeader({ title }: { title: string }) {
   )
 }
 
-function ListChip({ text }: { text: string }) {
+function ListChip({
+  text,
+  compact = false,
+}: {
+  text: string
+  compact?: boolean
+}) {
   return (
     <span
       style={{
@@ -45,8 +52,8 @@ function ListChip({ text }: { text: string }) {
         background: "rgba(2,84,236,0.08)",
         color: "var(--text-primary)",
         fontFamily: "JetBrains Mono, monospace",
-        fontSize: "10px",
-        padding: "5px 9px",
+        fontSize: compact ? "10px" : "11px",
+        padding: compact ? "5px 9px" : "7px 11px",
       }}
     >
       {text}
@@ -54,7 +61,13 @@ function ListChip({ text }: { text: string }) {
   )
 }
 
-function SourceLabel({ source }: { source: string }) {
+function SourceLabel({
+  source,
+  compact = false,
+}: {
+  source: string
+  compact?: boolean
+}) {
   return (
     <span
       style={{
@@ -65,9 +78,9 @@ function SourceLabel({ source }: { source: string }) {
         background: "rgba(255,191,255,0.18)",
         color: "var(--text-primary)",
         fontFamily: "JetBrains Mono, monospace",
-        fontSize: "10px",
+        fontSize: compact ? "10px" : "11px",
         fontWeight: 700,
-        padding: "5px 9px",
+        padding: compact ? "5px 9px" : "7px 11px",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
       }}
@@ -77,11 +90,16 @@ function SourceLabel({ source }: { source: string }) {
   )
 }
 
-export function CardBack({ actor, className }: CardBackProps) {
-  const ttps = actor.ttps.slice(0, 4)
-  const campaigns = actor.campaigns.slice(0, 2)
-  const tools = actor.tools.slice(0, 5)
-  const regions = actor.geographies.slice(0, 4)
+export function CardBack({
+  actor,
+  className,
+  variant = "compact",
+}: CardBackProps) {
+  const compact = variant === "compact"
+  const ttps = compact ? actor.ttps.slice(0, 4) : actor.ttps
+  const campaigns = compact ? actor.campaigns.slice(0, 2) : actor.campaigns
+  const tools = compact ? actor.tools.slice(0, 6) : actor.tools
+  const regions = compact ? actor.geographies.slice(0, 6) : actor.geographies
   const sources = Array.from(new Set(actor.sources.map((source) => source.source)))
   const rarityColor = getRarityColor(actor.rarity)
 
@@ -95,71 +113,102 @@ export function CardBack({ actor, className }: CardBackProps) {
         flexDirection: "column",
         overflow: "hidden",
         border: `2px solid ${rarityColor}`,
-        boxShadow: `0 0 16px ${rarityColor}55, 0 18px 45px -28px ${rarityColor}55`,
+        boxShadow: `0 0 18px ${rarityColor}55, 0 28px 60px -36px ${rarityColor}55`,
       }}
     >
       <div
         style={{
           background: "var(--card-header)",
           borderBottom: `1px solid ${rarityColor}45`,
-          padding: "14px 16px",
+          padding: compact ? "14px 16px" : "18px 22px",
         }}
       >
-        <p
+        <div
           style={{
-            margin: 0,
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: "10px",
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "0.18em",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
           }}
         >
-          Intel Notes
-        </p>
-        <h3
-          style={{
-            margin: "6px 0 0",
-            fontFamily: "Orbitron, sans-serif",
-            fontSize: "22px",
-            lineHeight: 1.05,
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-          }}
-        >
-          {actor.canonicalName}
-        </h3>
+          <div>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: compact ? "10px" : "11px",
+                color: "var(--text-muted)",
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+              }}
+            >
+              Intel Notes
+            </p>
+            <h3
+              style={{
+                margin: "8px 0 0",
+                fontFamily: "Orbitron, sans-serif",
+                fontSize: compact ? "22px" : "34px",
+                lineHeight: 1.05,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {actor.canonicalName}
+            </h3>
+          </div>
+          <div
+            style={{
+              borderRadius: compact ? "16px" : "22px",
+              border: "1px solid rgba(2,84,236,0.14)",
+              background: "rgba(2,84,236,0.08)",
+              padding: compact ? "8px 10px" : "12px 14px",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: compact ? "10px" : "11px",
+                color: "var(--text-muted)",
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                marginBottom: "4px",
+              }}
+            >
+              Last Updated
+            </div>
+            <div style={{ fontWeight: 800, fontSize: compact ? "12px" : "14px" }}>
+              {new Date(actor.lastUpdated).toLocaleDateString()}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div
         style={{
-          padding: "16px",
+          padding: compact ? "16px" : "22px",
           display: "flex",
           flexDirection: "column",
-          gap: "14px",
-          overflow: "hidden",
+          gap: compact ? "14px" : "18px",
+          overflowY: "auto",
           flex: 1,
         }}
       >
         <div
           style={{
-            borderRadius: "18px",
+            borderRadius: compact ? "18px" : "24px",
             background: "var(--card-panel)",
             border: "1px solid rgba(2,84,236,0.12)",
-            padding: "14px",
+            padding: compact ? "14px" : "18px",
           }}
         >
           <SectionHeader title="Profile" />
           <p
             style={{
               margin: 0,
-              fontSize: "12px",
-              lineHeight: 1.6,
+              fontSize: compact ? "12px" : "15px",
+              lineHeight: 1.7,
               color: "var(--text-muted)",
-              display: "-webkit-box",
-              WebkitBoxOrient: "vertical",
-              WebkitLineClamp: 5,
-              overflow: "hidden",
             }}
           >
             {actor.description}
@@ -169,87 +218,118 @@ export function CardBack({ actor, className }: CardBackProps) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "12px",
+            gridTemplateColumns: compact ? "1fr 1fr" : "1fr 1fr",
+            gap: compact ? "12px" : "16px",
           }}
         >
           <div
             style={{
-              borderRadius: "18px",
+              borderRadius: compact ? "18px" : "24px",
               background: "var(--card-panel)",
               border: "1px solid rgba(2,84,236,0.12)",
-              padding: "14px",
+              padding: compact ? "14px" : "18px",
             }}
           >
             <SectionHeader title="Tools" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {tools.map((tool) => (
-                <ListChip key={tool} text={tool} />
-              ))}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {tools.length > 0 ? (
+                tools.map((tool) => (
+                  <ListChip key={tool} text={tool} compact={compact} />
+                ))
+              ) : (
+                <span style={{ color: "var(--text-muted)", fontSize: compact ? "11px" : "13px" }}>
+                  No tools listed
+                </span>
+              )}
             </div>
           </div>
 
           <div
             style={{
-              borderRadius: "18px",
+              borderRadius: compact ? "18px" : "24px",
               background: "var(--card-panel)",
               border: "1px solid rgba(2,84,236,0.12)",
-              padding: "14px",
+              padding: compact ? "14px" : "18px",
             }}
           >
             <SectionHeader title="Targets" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {regions.map((region) => (
-                <ListChip key={region} text={region} />
-              ))}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {regions.length > 0 ? (
+                regions.map((region) => (
+                  <ListChip key={region} text={region} compact={compact} />
+                ))
+              ) : (
+                <span style={{ color: "var(--text-muted)", fontSize: compact ? "11px" : "13px" }}>
+                  No regions listed
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         <div
           style={{
-            borderRadius: "18px",
+            borderRadius: compact ? "18px" : "24px",
             background: "var(--card-panel)",
             border: "1px solid rgba(2,84,236,0.12)",
-            padding: "14px",
+            padding: compact ? "14px" : "18px",
           }}
         >
           <SectionHeader title="ATT&CK Techniques" />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {ttps.map((ttp) => (
-              <ListChip key={ttp.techniqueId} text={`${ttp.techniqueId} ${ttp.techniqueName}`} />
-            ))}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            {ttps.length > 0 ? (
+              ttps.map((ttp) => (
+                <ListChip
+                  key={`${ttp.techniqueId}-${ttp.techniqueName}`}
+                  text={`${ttp.techniqueId} ${ttp.techniqueName}`}
+                  compact={compact}
+                />
+              ))
+            ) : (
+              <span style={{ color: "var(--text-muted)", fontSize: compact ? "11px" : "13px" }}>
+                No ATT&CK techniques listed
+              </span>
+            )}
           </div>
         </div>
 
-        {campaigns.length > 0 && (
-          <div
-            style={{
-              borderRadius: "18px",
-              background: "var(--card-panel)",
-              border: "1px solid rgba(2,84,236,0.12)",
-              padding: "14px",
-            }}
-          >
-            <SectionHeader title="Campaigns" />
-            <div style={{ display: "grid", gap: "8px" }}>
-              {campaigns.map((campaign) => (
+        <div
+          style={{
+            borderRadius: compact ? "18px" : "24px",
+            background: "var(--card-panel)",
+            border: "1px solid rgba(2,84,236,0.12)",
+            padding: compact ? "14px" : "18px",
+          }}
+        >
+          <SectionHeader title="Campaigns" />
+          <div style={{ display: "grid", gap: compact ? "8px" : "12px" }}>
+            {campaigns.length > 0 ? (
+              campaigns.map((campaign) => (
                 <div
                   key={campaign.name}
                   style={{
-                    borderRadius: "14px",
-                    padding: "10px 12px",
+                    borderRadius: compact ? "14px" : "18px",
+                    padding: compact ? "10px 12px" : "14px 16px",
                     background: "rgba(2,84,236,0.06)",
                     border: "1px solid rgba(2,84,236,0.1)",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                    <span style={{ fontWeight: 700, fontSize: "12px" }}>{campaign.name}</span>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      alignItems: "baseline",
+                    }}
+                  >
+                    <span style={{ fontWeight: 800, fontSize: compact ? "12px" : "15px" }}>
+                      {campaign.name}
+                    </span>
                     {campaign.year && (
                       <span
                         style={{
                           fontFamily: "JetBrains Mono, monospace",
-                          fontSize: "10px",
+                          fontSize: compact ? "10px" : "11px",
                           color: "var(--text-muted)",
                         }}
                       >
@@ -260,32 +340,36 @@ export function CardBack({ actor, className }: CardBackProps) {
                   <p
                     style={{
                       margin: "6px 0 0",
-                      fontSize: "11px",
-                      lineHeight: 1.5,
+                      fontSize: compact ? "11px" : "14px",
+                      lineHeight: 1.6,
                       color: "var(--text-muted)",
                     }}
                   >
                     {campaign.description}
                   </p>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <span style={{ color: "var(--text-muted)", fontSize: compact ? "11px" : "13px" }}>
+                No campaigns listed
+              </span>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <div
         style={{
           borderTop: "1px solid rgba(2,84,236,0.12)",
-          padding: "12px 16px 16px",
+          padding: compact ? "12px 16px 16px" : "16px 22px 20px",
           background: "rgba(2,84,236,0.04)",
           display: "flex",
           flexWrap: "wrap",
-          gap: "6px",
+          gap: "8px",
         }}
       >
         {sources.map((source) => (
-          <SourceLabel key={source} source={source} />
+          <SourceLabel key={source} source={source} compact={compact} />
         ))}
       </div>
     </div>

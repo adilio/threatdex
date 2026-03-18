@@ -8,6 +8,12 @@ import type { ThreatActor } from "~/schema"
 
 const LIMIT = 20
 
+type SortOption =
+  | "threat_desc"
+  | "recent_desc"
+  | "updated_desc"
+  | "name_asc"
+
 const DATA_SOURCES = [
   {
     id: "mitre",
@@ -81,6 +87,48 @@ function mapToActor(row: Record<string, unknown>): ThreatActor {
   }
 }
 
+function sortActors(
+  rows: Record<string, unknown>[],
+  sort: SortOption,
+) {
+  const items = [...rows]
+
+  items.sort((a, b) => {
+    switch (sort) {
+      case "name_asc":
+        return String(a.canonical_name ?? "").localeCompare(
+          String(b.canonical_name ?? ""),
+        )
+      case "updated_desc":
+        return (
+          new Date(String(b.last_updated ?? 0)).getTime() -
+          new Date(String(a.last_updated ?? 0)).getTime()
+        )
+      case "recent_desc": {
+        const lastSeenCompare = String(b.last_seen ?? "").localeCompare(
+          String(a.last_seen ?? ""),
+        )
+        if (lastSeenCompare !== 0) return lastSeenCompare
+        return (
+          new Date(String(b.last_updated ?? 0)).getTime() -
+          new Date(String(a.last_updated ?? 0)).getTime()
+        )
+      }
+      case "threat_desc":
+      default: {
+        const threatDelta =
+          Number(b.threat_level ?? 0) - Number(a.threat_level ?? 0)
+        if (threatDelta !== 0) return threatDelta
+        return String(a.canonical_name ?? "").localeCompare(
+          String(b.canonical_name ?? ""),
+        )
+      }
+    }
+  })
+
+  return items
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const supabase = getSupabaseServerClient()
   const url = new URL(request.url)
@@ -88,27 +136,48 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const country = url.searchParams.get("country") ?? ""
   const motivation = url.searchParams.get("motivation") ?? ""
   const rarity = url.searchParams.get("rarity") ?? ""
+  const sort = (url.searchParams.get("sort") ?? "threat_desc") as SortOption
   const offset = parseInt(url.searchParams.get("offset") ?? "0", 10)
 
-  let query = supabase
-    .from("actors")
-    .select("*", { count: "exact" })
-    .order("threat_level", { ascending: false })
-    .range(offset, offset + LIMIT - 1)
+  let query = supabase.from("actors").select("*", { count: "exact" })
+
+  switch (sort) {
+    case "name_asc":
+      query = query.order("canonical_name", { ascending: true })
+      break
+    case "updated_desc":
+      query = query.order("last_updated", { ascending: false })
+      break
+    case "recent_desc":
+      query = query
+        .order("last_seen", { ascending: false, nullsFirst: false })
+        .order("last_updated", { ascending: false })
+      break
+    case "threat_desc":
+    default:
+      query = query
+        .order("threat_level", { ascending: false })
+        .order("canonical_name", { ascending: true })
+      break
+  }
+
+  query = query.range(offset, offset + LIMIT - 1)
 
   if (search) {
-    const { data, count, error } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .rpc("search_actors", { query: search })
-      .range(offset, offset + LIMIT - 1)
 
     if (error) throw new Response("Failed to load actors", { status: 500 })
 
+    const sorted = sortActors((data ?? []) as Record<string, unknown>[], sort)
+    const paged = sorted.slice(offset, offset + LIMIT)
+
     return {
-      items: ((data ?? []) as Record<string, unknown>[]).map(mapToActor),
-      total: count ?? 0,
+      items: paged.map(mapToActor),
+      total: sorted.length,
       limit: LIMIT,
       offset,
-      searchParams: { q: search, country, motivation, rarity },
+      searchParams: { q: search, country, motivation, rarity, sort },
     }
   }
 
@@ -124,7 +193,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     total: count ?? 0,
     limit: LIMIT,
     offset,
-    searchParams: { q: search, country, motivation, rarity },
+    searchParams: { q: search, country, motivation, rarity, sort },
   }
 }
 
@@ -137,6 +206,7 @@ export default function HomePage() {
     ...(searchParams.country ? { country: searchParams.country } : {}),
     ...(searchParams.motivation ? { motivation: searchParams.motivation } : {}),
     ...(searchParams.rarity ? { rarity: searchParams.rarity } : {}),
+    ...(searchParams.sort ? { sort: searchParams.sort } : {}),
     offset: String(offset + limit),
   })
 
@@ -191,6 +261,7 @@ export default function HomePage() {
           initialCountry={searchParams.country ?? ""}
           initialMotivation={searchParams.motivation ?? ""}
           initialRarity={searchParams.rarity ?? ""}
+          initialSort={searchParams.sort ?? "threat_desc"}
         />
       </section>
 
@@ -208,8 +279,8 @@ export default function HomePage() {
               {total} actors
             </p>
             <p className="text-sm text-app-muted">
-              Click a card to flip it. Use the detail page for full ATT&amp;CK,
-              source, and campaign context.
+              Click a card to open the expanded dossier. Flip inside the modal
+              for the full front/back card without clipping.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
