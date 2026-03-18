@@ -9,4 +9,3 @@
   from = "/*"
   to = "/.netlify/functions/react-router-server"
   status = 200
-  force = true
