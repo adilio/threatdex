@@ -1,3 +1,5 @@
+import { Fragment } from "react"
+import type { ReactNode } from "react"
 import type { ThreatActor } from "~/schema"
 import { getRarityColor } from "~/schema"
 
@@ -5,6 +7,54 @@ interface CardBackProps {
   actor: ThreatActor
   className?: string
   variant?: "compact" | "expanded"
+}
+
+function renderRichText(text: string) {
+  const tokenRegex =
+    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*]+)\*|_([^_]+)_/g
+  const nodes: ReactNode[] = []
+  let lastIndex = 0
+
+  for (const match of text.matchAll(tokenRegex)) {
+    const index = match.index ?? 0
+
+    if (index > lastIndex) {
+      nodes.push(text.slice(lastIndex, index))
+    }
+
+    if (match[1] && match[2]) {
+      nodes.push(
+        <a
+          key={`${match[1]}-${index}`}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: "#0254EC",
+            fontWeight: 700,
+            textDecoration: "underline",
+            textUnderlineOffset: "0.16em",
+          }}
+        >
+          {match[1]}
+        </a>,
+      )
+    } else if (match[3] || match[4]) {
+      nodes.push(
+        <strong key={`strong-${index}`}>{match[3] ?? match[4]}</strong>,
+      )
+    } else if (match[5] || match[6]) {
+      nodes.push(<em key={`em-${index}`}>{match[5] ?? match[6]}</em>)
+    }
+
+    lastIndex = index + match[0].length
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex))
+  }
+
+  return nodes.map((node, index) => <Fragment key={index}>{node}</Fragment>)
 }
 
 function SectionHeader({ title }: { title: string }) {
@@ -209,9 +259,11 @@ export function CardBack({
               fontSize: compact ? "12px" : "15px",
               lineHeight: 1.7,
               color: "var(--text-muted)",
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
             }}
           >
-            {actor.description}
+            {renderRichText(actor.description)}
           </p>
         </div>
 
@@ -343,9 +395,11 @@ export function CardBack({
                       fontSize: compact ? "11px" : "14px",
                       lineHeight: 1.6,
                       color: "var(--text-muted)",
+                      overflowWrap: "anywhere",
+                      wordBreak: "break-word",
                     }}
                   >
-                    {campaign.description}
+                    {renderRichText(campaign.description)}
                   </p>
                 </div>
               ))

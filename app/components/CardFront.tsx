@@ -421,6 +421,8 @@ export function CardFront({
                   fontSize: compact ? "13px" : "16px",
                   lineHeight: 1.6,
                   color: "var(--text-muted)",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                   display: compact ? "-webkit-box" : "block",
                   WebkitBoxOrient: compact ? "vertical" : undefined,
                   WebkitLineClamp: compact ? 2 : undefined,
@@ -464,6 +466,8 @@ export function CardFront({
                 fontSize: compact ? "11px" : "12px",
                 color: "var(--text-muted)",
                 letterSpacing: "0.03em",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
               }}
             >
               aka {aliases.join(" - ")}
