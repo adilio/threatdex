@@ -1,4 +1,3 @@
-import React from "react"
 import { getThreatLevelLabel } from "~/schema"
 
 interface ThreatLevelBarProps {
@@ -7,7 +6,7 @@ interface ThreatLevelBarProps {
 }
 
 function getSegmentColor(segmentIndex: number, totalFilled: number): string {
-  if (segmentIndex >= totalFilled) return "#173AAA"
+  if (segmentIndex >= totalFilled) return "rgba(23,58,170,0.2)"
   const ratio = segmentIndex / 9
   if (ratio < 0.4) return "#00C853" // green
   if (ratio < 0.65) return "#FFD600" // yellow
@@ -47,7 +46,7 @@ export function ThreatLevelBar({ level, showLabel = false }: ThreatLevelBarProps
           style={{
             fontFamily: "monospace",
             fontSize: "12px",
-            color: "#FFFFFF",
+            color: "var(--text-primary)",
             fontWeight: 700,
             marginLeft: "4px",
           }}
@@ -60,7 +59,7 @@ export function ThreatLevelBar({ level, showLabel = false }: ThreatLevelBarProps
           style={{
             fontFamily: "monospace",
             fontSize: "10px",
-            color: "#978BFF",
+            color: "var(--text-muted)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
           }}

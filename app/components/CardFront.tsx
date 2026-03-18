@@ -1,4 +1,4 @@
-import React from "react"
+import type React from "react"
 import type { ThreatActor, Rarity } from "~/schema"
 import { getRarityColor, getSophisticationScore } from "~/schema"
 import { RarityBadge } from "./RarityBadge"
@@ -9,41 +9,24 @@ interface CardFrontProps {
   className?: string
 }
 
-// ---------------------------------------------------------------------------
-// Rarity-specific border/glow styles
-// ---------------------------------------------------------------------------
-
 function getRarityBorderStyle(rarity: Rarity): React.CSSProperties {
-  switch (rarity) {
-    case "MYTHIC":
-      return {
-        border: "2px solid #FFFF00",
-        boxShadow:
-          "0 0 12px #FFFF00, 0 0 30px rgba(255,255,0,0.25), inset 0 0 20px rgba(255,255,0,0.04)",
-      }
-    case "LEGENDARY":
-      return {
-        border: "2px solid #FF0BBE",
-        boxShadow:
-          "0 0 10px rgba(255,11,190,0.7), 0 0 24px rgba(255,11,190,0.25), inset 0 0 16px rgba(255,11,190,0.04)",
-      }
-    case "EPIC":
-      return {
-        border: "2px solid #978BFF",
-        boxShadow: "0 0 8px rgba(151,139,255,0.5), 0 0 20px rgba(151,139,255,0.2)",
-      }
-    case "RARE":
-    default:
-      return {
-        border: "2px solid #6197FF",
-        boxShadow: "0 0 6px rgba(97,151,255,0.4)",
-      }
+  const rarityColor = getRarityColor(rarity)
+
+  return {
+    border: `2px solid ${rarityColor}`,
+    boxShadow: `0 0 16px ${rarityColor}66, 0 18px 45px -28px ${rarityColor}66`,
   }
 }
 
-// ---------------------------------------------------------------------------
-// Hero image placeholder — gradient + initials
-// ---------------------------------------------------------------------------
+function getCountryFlag(countryCode?: string) {
+  if (!countryCode) return "🌐"
+
+  return String.fromCodePoint(
+    ...Array.from(countryCode.toUpperCase()).map(
+      (character) => 0x1f1e6 - 65 + character.charCodeAt(0),
+    ),
+  )
+}
 
 function HeroPlaceholder({
   actor,
@@ -55,27 +38,20 @@ function HeroPlaceholder({
   const initials = actor.canonicalName
     .split(/\s+/)
     .slice(0, 2)
-    .map((w) => w[0])
+    .map((word) => word[0])
     .join("")
     .toUpperCase()
 
   const gradientMap: Record<Rarity, string> = {
     MYTHIC:
-      "linear-gradient(135deg, #00123F 0%, #173AAA 40%, #FFFF00 100%)",
+      "linear-gradient(135deg, rgba(2,84,236,0.92) 0%, rgba(255,255,0,0.85) 100%)",
     LEGENDARY:
-      "linear-gradient(135deg, #00123F 0%, #C64BA4 50%, #FF0BBE 100%)",
-    EPIC: "linear-gradient(135deg, #00123F 0%, #173AAA 55%, #978BFF 100%)",
-    RARE: "linear-gradient(135deg, #00123F 0%, #173AAA 60%, #6197FF 100%)",
+      "linear-gradient(135deg, rgba(23,58,170,0.94) 0%, rgba(255,155,190,0.9) 100%)",
+    EPIC:
+      "linear-gradient(135deg, rgba(23,58,170,0.92) 0%, rgba(151,187,255,0.9) 100%)",
+    RARE:
+      "linear-gradient(135deg, rgba(2,84,236,0.86) 0%, rgba(97,151,255,0.92) 100%)",
   }
-
-  const countryFlag =
-    actor.countryCode
-      ? String.fromCodePoint(
-          ...Array.from(actor.countryCode.toUpperCase()).map(
-            (c) => 0x1f1e6 - 65 + c.charCodeAt(0),
-          ),
-        )
-      : "🌐"
 
   return (
     <div
@@ -87,43 +63,32 @@ function HeroPlaceholder({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: "8px",
+        gap: "10px",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* Decorative circuit-like lines */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: `
-            repeating-linear-gradient(
-              90deg,
-              transparent,
-              transparent 28px,
-              rgba(97,151,255,0.07) 28px,
-              rgba(97,151,255,0.07) 29px
-            ),
-            repeating-linear-gradient(
-              0deg,
-              transparent,
-              transparent 28px,
-              rgba(97,151,255,0.07) 28px,
-              rgba(97,151,255,0.07) 29px
-            )
-          `,
+          backgroundImage:
+            "linear-gradient(to right, var(--card-grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--card-grid-line) 1px, transparent 1px)",
+          backgroundSize: "26px 26px",
+          opacity: 0.75,
         }}
       />
-      <span style={{ fontSize: "36px", lineHeight: 1 }}>{countryFlag}</span>
+      <span style={{ fontSize: "46px", lineHeight: 1, zIndex: 1 }}>
+        {getCountryFlag(actor.countryCode)}
+      </span>
       <span
         style={{
-          fontFamily: "monospace",
-          fontSize: "32px",
+          fontFamily: "Orbitron, sans-serif",
+          fontSize: "52px",
           fontWeight: 900,
-          color: getRarityColor(rarity),
-          letterSpacing: "0.12em",
-          textShadow: `0 0 12px ${getRarityColor(rarity)}`,
+          color: rarity === "MYTHIC" ? "#01123F" : "#FFFFFF",
+          letterSpacing: "0.08em",
+          textShadow: "0 6px 24px rgba(1,18,63,0.22)",
           zIndex: 1,
         }}
       >
@@ -131,10 +96,10 @@ function HeroPlaceholder({
       </span>
       <span
         style={{
-          fontFamily: "monospace",
-          fontSize: "9px",
-          color: "rgba(255,255,255,0.35)",
-          letterSpacing: "0.2em",
+          fontFamily: "JetBrains Mono, monospace",
+          fontSize: "10px",
+          color: "rgba(255,255,255,0.8)",
+          letterSpacing: "0.18em",
           textTransform: "uppercase",
           zIndex: 1,
         }}
@@ -145,23 +110,20 @@ function HeroPlaceholder({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Motivation chip
-// ---------------------------------------------------------------------------
-
 const MOTIVATION_COLORS: Record<string, { bg: string; text: string }> = {
-  espionage: { bg: "rgba(2,84,236,0.25)", text: "#6197FF" },
-  financial: { bg: "rgba(255,255,0,0.15)", text: "#FFFF00" },
-  sabotage: { bg: "rgba(255,11,190,0.15)", text: "#FF0BBE" },
-  hacktivism: { bg: "rgba(151,139,255,0.2)", text: "#978BFF" },
-  military: { bg: "rgba(198,75,164,0.2)", text: "#FFBFD6" },
+  espionage: { bg: "rgba(2,84,236,0.16)", text: "#0254EC" },
+  financial: { bg: "rgba(255,255,0,0.18)", text: "#665700" },
+  sabotage: { bg: "rgba(255,155,190,0.2)", text: "#A10B6E" },
+  hacktivism: { bg: "rgba(151,187,255,0.24)", text: "#173AAA" },
+  military: { bg: "rgba(197,107,164,0.18)", text: "#8C2B6A" },
 }
 
 function MotivationChip({ motivation }: { motivation: string }) {
   const style = MOTIVATION_COLORS[motivation] ?? {
-    bg: "rgba(97,151,255,0.15)",
-    text: "#6197FF",
+    bg: "rgba(2,84,236,0.14)",
+    text: "#0254EC",
   }
+
   return (
     <span
       style={{
@@ -169,12 +131,12 @@ function MotivationChip({ motivation }: { motivation: string }) {
         alignItems: "center",
         background: style.bg,
         color: style.text,
-        border: `1px solid ${style.text}40`,
-        borderRadius: "3px",
-        fontFamily: "monospace",
-        fontSize: "9px",
+        border: `1px solid ${style.text}30`,
+        borderRadius: "999px",
+        fontFamily: "JetBrains Mono, monospace",
+        fontSize: "10px",
         fontWeight: 700,
-        padding: "2px 6px",
+        padding: "4px 9px",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
         whiteSpace: "nowrap",
@@ -185,10 +147,6 @@ function MotivationChip({ motivation }: { motivation: string }) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Sophistication pip row
-// ---------------------------------------------------------------------------
-
 function SophisticationPips({
   score,
   max = 5,
@@ -197,16 +155,16 @@ function SophisticationPips({
   max?: number
 }) {
   return (
-    <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
-      {Array.from({ length: max }, (_, i) => (
+    <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+      {Array.from({ length: max }, (_, index) => (
         <div
-          key={i}
+          key={index}
           style={{
-            width: "6px",
-            height: "6px",
-            borderRadius: "50%",
-            backgroundColor: i < score ? "#978BFF" : "#173AAA",
-            boxShadow: i < score ? "0 0 4px #978BFF80" : undefined,
+            width: "8px",
+            height: "8px",
+            borderRadius: "999px",
+            backgroundColor: index < score ? "#6197FF" : "rgba(23,58,170,0.2)",
+            boxShadow: index < score ? "0 0 6px rgba(97,151,255,0.45)" : undefined,
           }}
         />
       ))}
@@ -214,77 +172,65 @@ function SophisticationPips({
   )
 }
 
-// ---------------------------------------------------------------------------
-// CardFront
-// ---------------------------------------------------------------------------
-
 export function CardFront({ actor, className }: CardFrontProps) {
   const rarityBorder = getRarityBorderStyle(actor.rarity)
   const sophScore = getSophisticationScore(actor.sophistication)
-
-  const displayAliases = actor.aliases.slice(0, 3)
-  const displayMotivations = actor.motivation.slice(0, 4)
-
-  const firstLastSeen =
+  const aliases = actor.aliases.slice(0, 2)
+  const motivations = actor.motivation.slice(0, 2)
+  const activeWindow =
     actor.firstSeen && actor.lastSeen
-      ? `${actor.firstSeen} – ${actor.lastSeen}`
+      ? `${actor.firstSeen} - ${actor.lastSeen}`
       : actor.firstSeen
         ? `Since ${actor.firstSeen}`
         : actor.lastSeen
           ? `Until ${actor.lastSeen}`
-          : null
+          : "Unknown"
 
   return (
     <div
-      className={className}
+      className={`card-face ${className ?? ""}`.trim()}
       style={{
-        width: "280px",
-        height: "392px",
-        borderRadius: "12px",
-        background: "linear-gradient(160deg, #00123F 0%, #0a1a4a 100%)",
+        background: "var(--card-bg)",
+        color: "var(--text-primary)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        fontFamily: "sans-serif",
         position: "relative",
         ...rarityBorder,
       }}
     >
-      {/* ------------------------------------------------------------------ */}
-      {/* Header bar                                                          */}
-      {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          background: "linear-gradient(90deg, #00123F 0%, #173AAA 100%)",
-          padding: "6px 10px",
+          background: "var(--card-header)",
+          padding: "12px 16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: `1px solid ${getRarityColor(actor.rarity)}40`,
-          flexShrink: 0,
+          borderBottom: `1px solid ${getRarityColor(actor.rarity)}45`,
+          gap: "12px",
         }}
       >
         <span
           style={{
-            fontFamily: "monospace",
-            fontSize: "10px",
-            color: "#6197FF",
-            letterSpacing: "0.1em",
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: "11px",
+            color: "var(--text-muted)",
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
           }}
         >
           {actor.mitreId ?? actor.id.toUpperCase()}
         </span>
-        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <span
             style={{
-              fontFamily: "monospace",
-              fontSize: "9px",
-              background: actor.tlp === "GREEN" ? "rgba(0,200,83,0.2)" : "rgba(255,255,255,0.1)",
-              color: actor.tlp === "GREEN" ? "#00C853" : "#FFFFFF",
-              border: `1px solid ${actor.tlp === "GREEN" ? "#00C85380" : "#FFFFFF40"}`,
-              borderRadius: "3px",
-              padding: "1px 5px",
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: "10px",
+              background: actor.tlp === "GREEN" ? "rgba(0,200,83,0.16)" : "rgba(2,84,236,0.1)",
+              color: actor.tlp === "GREEN" ? "#007a3d" : "var(--text-primary)",
+              border: `1px solid ${actor.tlp === "GREEN" ? "rgba(0,122,61,0.2)" : "rgba(2,84,236,0.14)"}`,
+              borderRadius: "999px",
+              padding: "4px 8px",
               letterSpacing: "0.08em",
             }}
           >
@@ -294,17 +240,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Hero image                                                          */}
-      {/* ------------------------------------------------------------------ */}
-      <div
-        style={{
-          height: "140px",
-          position: "relative",
-          flexShrink: 0,
-          overflow: "hidden",
-        }}
-      >
+      <div style={{ height: "42%", minHeight: 0, position: "relative", overflow: "hidden" }}>
         {actor.imageUrl ? (
           <img
             src={actor.imageUrl}
@@ -314,246 +250,200 @@ export function CardFront({ actor, className }: CardFrontProps) {
         ) : (
           <HeroPlaceholder actor={actor} rarity={actor.rarity} />
         )}
-        {/* Gradient fade at bottom to blend into card body */}
         <div
           style={{
             position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "40px",
-            background: "linear-gradient(to top, #00123F, transparent)",
+            inset: 0,
+            background: "var(--card-hero-overlay)",
           }}
         />
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Name section                                                        */}
-      {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          padding: "6px 10px 4px",
-          flexShrink: 0,
+          padding: "18px 16px 16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+          flex: 1,
         }}
       >
-        <div
-          style={{
-            fontFamily: "sans-serif",
-            fontWeight: 800,
-            fontSize: "16px",
-            color: "#FFFFFF",
-            lineHeight: 1.2,
-            letterSpacing: "-0.01em",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {actor.canonicalName}
-        </div>
-        {actor.tagline && (
+        <div>
           <div
             style={{
-              fontFamily: "sans-serif",
-              fontSize: "10px",
-              color: "#978BFF",
-              fontStyle: "italic",
-              marginTop: "1px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "start",
+              justifyContent: "space-between",
+              gap: "12px",
             }}
           >
-            {actor.tagline}
-          </div>
-        )}
-        {displayAliases.length > 0 && (
-          <div
-            style={{
-              fontFamily: "monospace",
-              fontSize: "9px",
-              color: "#6197FF",
-              marginTop: "3px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            aka {displayAliases.join(" · ")}
-            {actor.aliases.length > 3 && (
-              <span style={{ color: "#978BFF" }}>
-                {" "}+{actor.aliases.length - 3}
+            <div>
+              <h3
+                style={{
+                  margin: 0,
+                  fontFamily: "Orbitron, sans-serif",
+                  fontSize: "24px",
+                  lineHeight: 1.05,
+                  letterSpacing: "0.03em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {actor.canonicalName}
+              </h3>
+              <p
+                style={{
+                  margin: "6px 0 0",
+                  fontSize: "13px",
+                  lineHeight: 1.5,
+                  color: "var(--text-muted)",
+                  display: "-webkit-box",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 2,
+                  overflow: "hidden",
+                }}
+              >
+                {actor.tagline ?? actor.description}
+              </p>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                placeItems: "center",
+                minWidth: "64px",
+                aspectRatio: "1 / 1",
+                borderRadius: "18px",
+                background: "var(--surface-chip)",
+                border: "1px solid rgba(2,84,236,0.14)",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "Orbitron, sans-serif",
+                  fontSize: "26px",
+                  fontWeight: 900,
+                  color: getRarityColor(actor.rarity),
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {actor.canonicalName.slice(0, 2).toUpperCase()}
               </span>
-            )}
+            </div>
           </div>
-        )}
-      </div>
+          {aliases.length > 0 && (
+            <p
+              style={{
+                margin: "10px 0 0",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "11px",
+                color: "var(--text-muted)",
+                letterSpacing: "0.03em",
+              }}
+            >
+              aka {aliases.join(" - ")}
+              {actor.aliases.length > aliases.length ? ` +${actor.aliases.length - aliases.length}` : ""}
+            </p>
+          )}
+        </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Stats bar                                                           */}
-      {/* ------------------------------------------------------------------ */}
-      <div
-        style={{
-          margin: "4px 10px",
-          background: "rgba(23,58,170,0.3)",
-          borderRadius: "6px",
-          border: "1px solid rgba(97,151,255,0.15)",
-          padding: "6px 8px",
-          flexShrink: 0,
-        }}
-      >
         <div
           style={{
+            borderRadius: "18px",
+            background: "var(--card-panel)",
+            border: "1px solid rgba(2,84,236,0.12)",
+            padding: "14px",
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "6px",
+            gap: "12px",
           }}
         >
-          {/* Threat level */}
           <div>
             <div
               style={{
-                fontFamily: "monospace",
-                fontSize: "8px",
-                color: "#6197FF",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "10px",
+                color: "var(--text-muted)",
                 textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "3px",
+                letterSpacing: "0.14em",
+                marginBottom: "6px",
               }}
             >
               Threat Level
             </div>
             <ThreatLevelBar level={actor.threatLevel} />
           </div>
-
-          {/* Sophistication */}
-          <div>
-            <div
-              style={{
-                fontFamily: "monospace",
-                fontSize: "8px",
-                color: "#6197FF",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "3px",
-              }}
-            >
-              Sophistication
-            </div>
-            <SophisticationPips score={sophScore} />
-            <div
-              style={{
-                fontFamily: "monospace",
-                fontSize: "9px",
-                color: "#FFBFFF",
-                marginTop: "2px",
-              }}
-            >
-              {actor.sophistication}
-            </div>
-          </div>
-
-          {/* Country */}
-          <div>
-            <div
-              style={{
-                fontFamily: "monospace",
-                fontSize: "8px",
-                color: "#6197FF",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "2px",
-              }}
-            >
-              Origin
-            </div>
-            <div
-              style={{
-                fontFamily: "monospace",
-                fontSize: "10px",
-                color: "#FFFFFF",
-              }}
-            >
-              {actor.country ?? "Unknown"}
-              {actor.countryCode && (
-                <span style={{ marginLeft: "4px" }}>
-                  {String.fromCodePoint(
-                    ...Array.from(actor.countryCode.toUpperCase()).map(
-                      (c) => 0x1f1e6 - 65 + c.charCodeAt(0),
-                    ),
-                  )}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Active period */}
-          {firstLastSeen && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+            }}
+          >
             <div>
               <div
                 style={{
-                  fontFamily: "monospace",
-                  fontSize: "8px",
-                  color: "#6197FF",
+                  fontFamily: "JetBrains Mono, monospace",
+                  fontSize: "10px",
+                  color: "var(--text-muted)",
                   textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  marginBottom: "2px",
+                  letterSpacing: "0.14em",
+                  marginBottom: "6px",
+                }}
+              >
+                Origin
+              </div>
+              <div style={{ fontWeight: 700, fontSize: "14px" }}>
+                {actor.country ?? "Unknown"} {getCountryFlag(actor.countryCode)}
+              </div>
+            </div>
+            <div>
+              <div
+                style={{
+                  fontFamily: "JetBrains Mono, monospace",
+                  fontSize: "10px",
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em",
+                  marginBottom: "6px",
                 }}
               >
                 Active
               </div>
-              <div
+              <div style={{ fontWeight: 700, fontSize: "14px" }}>{activeWindow}</div>
+            </div>
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "10px",
+                color: "var(--text-muted)",
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                marginBottom: "6px",
+              }}
+            >
+              Sophistication
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+              <SophisticationPips score={sophScore} />
+              <span
                 style={{
-                  fontFamily: "monospace",
-                  fontSize: "10px",
-                  color: "#FFFFFF",
+                  fontFamily: "JetBrains Mono, monospace",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
                 }}
               >
-                {firstLastSeen}
-              </div>
+                {actor.sophistication}
+              </span>
             </div>
-          )}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          {motivations.map((motivation) => (
+            <MotivationChip key={motivation} motivation={motivation} />
+          ))}
         </div>
       </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Footer — motivation tags                                            */}
-      {/* ------------------------------------------------------------------ */}
-      <div
-        style={{
-          padding: "4px 10px 8px",
-          marginTop: "auto",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "4px",
-          alignItems: "center",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "monospace",
-            fontSize: "8px",
-            color: "#6197FF",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            marginRight: "2px",
-          }}
-        >
-          Motivation:
-        </span>
-        {displayMotivations.map((m) => (
-          <MotivationChip key={m} motivation={m} />
-        ))}
-      </div>
-
-      {/* Rarity-colored bottom accent line */}
-      <div
-        style={{
-          height: "3px",
-          background: `linear-gradient(90deg, transparent, ${getRarityColor(actor.rarity)}, transparent)`,
-          flexShrink: 0,
-        }}
-      />
     </div>
   )
 }

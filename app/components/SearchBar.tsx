@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router";
-import { Search, X } from "lucide-react";
-import clsx from "clsx";
+import { useState, useEffect, useRef, useCallback } from "react"
+import type { ChangeEvent, KeyboardEvent } from "react"
+import { useNavigate, useSearchParams } from "react-router"
+import { Search, X } from "lucide-react"
+import clsx from "clsx"
 
 interface SearchBarProps {
-  initialValue?: string;
-  placeholder?: string;
-  onSearch?: (value: string) => void;
-  /** Debounce delay in ms. Defaults to 300. */
-  debounceMs?: number;
-  className?: string;
+  initialValue?: string
+  placeholder?: string
+  onSearch?: (value: string) => void
+  debounceMs?: number
+  className?: string
 }
 
 export function SearchBar({
@@ -19,82 +19,74 @@ export function SearchBar({
   debounceMs = 300,
   className,
 }: SearchBarProps) {
-  const [value, setValue] = useState(initialValue);
-  const [focused, setFocused] = useState(false);
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [value, setValue] = useState(initialValue)
+  const [focused, setFocused] = useState(false)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
-  // Keep local value in sync with URL-driven initialValue changes
   useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
+    setValue(initialValue)
+  }, [initialValue])
 
   const commitSearch = useCallback(
     (query: string) => {
       if (onSearch) {
-        onSearch(query);
-        return;
+        onSearch(query)
+        return
       }
-      // Default: push to URL search params
-      const params = new URLSearchParams(searchParams.toString());
+
+      const params = new URLSearchParams(searchParams.toString())
       if (query) {
-        params.set("q", query);
+        params.set("q", query)
       } else {
-        params.delete("q");
+        params.delete("q")
       }
-      // Reset pagination when search changes
-      params.delete("offset");
-      navigate(`?${params.toString()}`);
+      params.delete("offset")
+      navigate(`?${params.toString()}`)
     },
-    [onSearch, navigate, searchParams],
-  );
+    [navigate, onSearch, searchParams],
+  )
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const next = e.target.value;
-      setValue(next);
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const nextValue = event.target.value
+      setValue(nextValue)
 
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
       debounceTimer.current = setTimeout(() => {
-        commitSearch(next);
-      }, debounceMs);
+        commitSearch(nextValue)
+      }, debounceMs)
     },
     [commitSearch, debounceMs],
-  );
+  )
 
   const handleClear = useCallback(() => {
-    setValue("");
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    commitSearch("");
-  }, [commitSearch]);
+    setValue("")
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    commitSearch("")
+  }, [commitSearch])
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        if (debounceTimer.current) clearTimeout(debounceTimer.current);
-        commitSearch(value);
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter") {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current)
+        commitSearch(value)
       }
-      if (e.key === "Escape") {
-        handleClear();
+
+      if (event.key === "Escape") {
+        handleClear()
       }
     },
     [commitSearch, handleClear, value],
-  );
+  )
 
   return (
-    <div
-      className={clsx(
-        "relative flex items-center w-full max-w-2xl mx-auto",
-        className,
-      )}
-    >
+    <div className={clsx("dex-panel relative mx-auto w-full max-w-4xl", className)}>
       <Search
         className={clsx(
-          "absolute left-4 w-4 h-4 pointer-events-none transition-colors",
-          focused ? "text-wiz-blue" : "text-sky-blue/50",
+          "pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 transition-colors",
+          focused ? "text-wiz-blue" : "text-app-muted",
         )}
       />
       <input
@@ -107,24 +99,20 @@ export function SearchBar({
         placeholder={placeholder}
         aria-label="Search threat actors"
         className={clsx(
-          "w-full pl-11 pr-10 py-3 rounded-xl text-sm font-sans",
-          "bg-blue-shadow/20 border transition-all duration-200 outline-none",
-          "text-cloudy-white placeholder-sky-blue/40",
-          "focus:bg-blue-shadow/30",
-          focused
-            ? "border-wiz-blue ring-2 ring-wiz-blue/20"
-            : "border-blue-shadow hover:border-sky-blue/50",
+          "w-full rounded-[1.75rem] border border-transparent bg-transparent py-5 pl-14 pr-12 text-base text-app-text outline-none transition-all duration-200 placeholder:text-app-muted",
+          focused && "ring-2 ring-wiz-blue/15",
         )}
       />
       {value && (
         <button
+          type="button"
           onClick={handleClear}
-          className="absolute right-3 p-1 text-sky-blue/50 hover:text-cloudy-white transition-colors rounded"
+          className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-app-border bg-app-chip p-2 text-app-muted transition-colors hover:text-app-text"
           aria-label="Clear search"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="h-4 w-4" />
         </button>
       )}
     </div>
-  );
+  )
 }
