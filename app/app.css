@@ -203,6 +203,7 @@ a {
 .card-shell {
   width: min(100%, 340px);
   aspect-ratio: 5 / 7;
+  flex-shrink: 0;
 }
 
 .card-face {
@@ -226,8 +227,8 @@ a {
 }
 
 .dex-modal-panel {
-  width: min(96vw, 1280px);
-  max-height: min(94vh, 980px);
+  width: min(96vw, 920px);
+  max-height: min(94vh, 1200px);
   overflow: hidden;
   border: 1px solid var(--border-primary);
   border-radius: 2rem;
@@ -247,11 +248,10 @@ a {
 }
 
 .dex-modal-content {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(280px, 0.55fr);
-  gap: 1.25rem;
+  display: flex;
+  justify-content: center;
   padding: 1.5rem;
-  max-height: calc(min(94vh, 980px) - 92px);
+  max-height: calc(min(94vh, 1200px) - 92px);
   overflow: auto;
 }
 
@@ -259,15 +259,11 @@ a {
   min-height: 0;
   aspect-ratio: 5 / 7;
   width: min(100%, 760px);
-  justify-self: center;
   perspective: 1800px;
+  flex-shrink: 0;
 }
 
 @media (max-width: 1024px) {
-  .dex-modal-content {
-    grid-template-columns: 1fr;
-  }
-
   .dex-modal-card-wrap {
     width: 100%;
     max-width: 760px;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ArrowRight, Maximize2, RotateCcw, X } from "lucide-react"
+import { Maximize2, RotateCcw, X } from "lucide-react"
 import type { ThreatActor } from "~/schema"
 import { CardFront } from "./CardFront"
 import { CardBack } from "./CardBack"
@@ -55,7 +55,7 @@ export function ThreatActorCard({
 
   return (
     <>
-      <div className={`flex flex-col gap-3 ${className ?? ""}`.trim()}>
+      <div className={`flex w-[340px] max-w-full flex-col gap-3 ${className ?? ""}`.trim()}>
         <div
           className="card-shell"
           onClick={() => setModalOpen(true)}
@@ -173,44 +173,6 @@ export function ThreatActorCard({
                     <CardBack actor={actor} variant="expanded" />
                   </div>
                 </div>
-              </div>
-
-              <div className="dex-subpanel flex flex-col justify-between gap-5">
-                <div className="space-y-4">
-                  <div className="rounded-3xl border border-app-border bg-app-panel p-5">
-                    <p className="dex-kicker mb-3">How To Use</p>
-                    <div className="space-y-2 text-sm leading-6 text-app-muted">
-                      <p>Flip the dossier to move between the visual front and the intel-heavy back.</p>
-                      <p>The expanded view is scrollable, so no techniques, campaigns, tools, or profile text get cut off.</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-app-border bg-app-panel p-5">
-                    <p className="dex-kicker mb-3">Quick Actions</p>
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        className="dex-button"
-                        onClick={handleFlip}
-                      >
-                        Flip Dossier
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
-                      <a
-                        href={`/actors/${actor.id}`}
-                        className="inline-flex items-center gap-2 rounded-full border border-app-border bg-app-panel px-4 py-3 text-sm font-semibold text-app-text"
-                      >
-                        Open Detail Page
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-sm leading-6 text-app-muted">
-                  Generated portraits appear automatically when an `image_url`
-                  exists in Supabase. If one is missing, ThreatDex falls back to
-                  the dossier-style portrait instead of leaving an empty frame.
-                </p>
               </div>
             </div>
           </div>

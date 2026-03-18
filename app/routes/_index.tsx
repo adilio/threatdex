@@ -59,6 +59,35 @@ export const meta: MetaFunction = () => [
 ]
 
 function mapToActor(row: Record<string, unknown>): ThreatActor {
+  const ttps = ((row.ttps as Record<string, unknown>[] | undefined) ?? []).map(
+    (ttp) => ({
+      techniqueId:
+        (ttp.techniqueId as string | undefined) ??
+        (ttp.technique_id as string | undefined) ??
+        "",
+      techniqueName:
+        (ttp.techniqueName as string | undefined) ??
+        (ttp.technique_name as string | undefined) ??
+        "",
+      tactic: (ttp.tactic as string | undefined) ?? "",
+    }),
+  )
+
+  const sources = (
+    (row.sources as Record<string, unknown>[] | undefined) ?? []
+  ).map((source) => ({
+    source: source.source as ThreatActor["sources"][number]["source"],
+    sourceId:
+      (source.sourceId as string | undefined) ??
+      (source.source_id as string | undefined) ??
+      undefined,
+    fetchedAt:
+      (source.fetchedAt as string | undefined) ??
+      (source.fetched_at as string | undefined) ??
+      new Date().toISOString(),
+    url: (source.url as string | undefined) ?? undefined,
+  }))
+
   return {
     id: row.id as string,
     canonicalName: row.canonical_name as string,
@@ -74,14 +103,14 @@ function mapToActor(row: Record<string, unknown>): ThreatActor {
     sectors: (row.sectors as string[]) ?? [],
     geographies: (row.geographies as string[]) ?? [],
     tools: (row.tools as string[]) ?? [],
-    ttps: (row.ttps as ThreatActor["ttps"]) ?? [],
+    ttps,
     campaigns: (row.campaigns as ThreatActor["campaigns"]) ?? [],
     description: row.description as string,
     tagline: (row.tagline as string | undefined) ?? undefined,
     rarity: row.rarity as ThreatActor["rarity"],
     imageUrl: (row.image_url as string | undefined) ?? undefined,
     imagePrompt: (row.image_prompt as string | undefined) ?? undefined,
-    sources: (row.sources as ThreatActor["sources"]) ?? [],
+    sources,
     tlp: (row.tlp as ThreatActor["tlp"]) ?? "WHITE",
     lastUpdated: row.last_updated as string,
   }
