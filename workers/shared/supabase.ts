@@ -2,7 +2,7 @@
  * Supabase client and sync logging helpers for ThreatDex workers.
  *
  * Replaces the Python shared/db.py module.
- * Reads SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from the environment.
+ * Reads SUPABASE_URL and SUPABASE_SERVICE_KEY from the environment.
  */
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
@@ -16,10 +16,10 @@ let _supabase: SupabaseClient | null = null
 export function getSupabase(): SupabaseClient {
   if (_supabase) return _supabase
   const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const key = process.env.SUPABASE_SERVICE_KEY
   if (!url || !key) {
     throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in the environment"
+      "SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in the environment"
     )
   }
   _supabase = createClient(url, key)
@@ -42,7 +42,7 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
  */
 export async function logSyncStart(source: string): Promise<string | null> {
   const { data, error } = await supabase
-    .from("sync_logs")
+    .from("sync_log")
     .insert({
       source,
       status: "running",
@@ -67,7 +67,7 @@ export async function logSyncComplete(
 ): Promise<void> {
   if (!logId) return
   const { error } = await supabase
-    .from("sync_logs")
+    .from("sync_log")
     .update({
       status: "complete",
       records_synced: recordsSynced,
@@ -89,7 +89,7 @@ export async function logSyncError(
 ): Promise<void> {
   if (!logId) return
   const { error } = await supabase
-    .from("sync_logs")
+    .from("sync_log")
     .update({
       status: "error",
       error_message: errorMessage,

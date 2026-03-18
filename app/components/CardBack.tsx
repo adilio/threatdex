@@ -1,4 +1,3 @@
-import React from "react"
 import type { ThreatActor } from "~/schema"
 import { getRarityColor } from "~/schema"
 
@@ -7,141 +6,68 @@ interface CardBackProps {
   className?: string
 }
 
-// ---------------------------------------------------------------------------
-// Section header
-// ---------------------------------------------------------------------------
-
-function SectionHeader({ title, icon }: { title: string; icon: string }) {
+function SectionHeader({ title }: { title: string }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "5px",
-        borderBottom: "1px solid rgba(97,151,255,0.2)",
-        paddingBottom: "3px",
-        marginBottom: "5px",
+        justifyContent: "space-between",
+        gap: "8px",
+        marginBottom: "8px",
       }}
     >
-      <span style={{ fontSize: "10px" }}>{icon}</span>
       <span
         style={{
-          fontFamily: "monospace",
-          fontSize: "8px",
-          color: "#6197FF",
+          fontFamily: "JetBrains Mono, monospace",
+          fontSize: "10px",
+          color: "var(--text-muted)",
           textTransform: "uppercase",
-          letterSpacing: "0.12em",
+          letterSpacing: "0.14em",
           fontWeight: 700,
         }}
       >
         {title}
       </span>
+      <div style={{ flex: 1, height: "1px", background: "rgba(2,84,236,0.12)" }} />
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// TTP chip
-// ---------------------------------------------------------------------------
-
-function TTPChip({
-  techniqueId,
-  tactic,
-}: {
-  techniqueId: string
-  tactic: string
-}) {
-  return (
-    <div
-      style={{
-        display: "inline-flex",
-        flexDirection: "column",
-        background: "rgba(2,84,236,0.2)",
-        border: "1px solid rgba(97,151,255,0.3)",
-        borderRadius: "4px",
-        padding: "2px 5px",
-        gap: "1px",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "monospace",
-          fontSize: "9px",
-          color: "#FFBFFF",
-          fontWeight: 700,
-          letterSpacing: "0.04em",
-        }}
-      >
-        {techniqueId}
-      </span>
-      <span
-        style={{
-          fontFamily: "monospace",
-          fontSize: "7px",
-          color: "#6197FF",
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-        }}
-      >
-        {tactic}
-      </span>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Tool chip
-// ---------------------------------------------------------------------------
-
-function ToolChip({ name }: { name: string }) {
+function ListChip({ text }: { text: string }) {
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        background: "rgba(151,139,255,0.15)",
-        border: "1px solid rgba(151,139,255,0.3)",
-        borderRadius: "3px",
-        fontFamily: "monospace",
-        fontSize: "8px",
-        color: "#978BFF",
-        padding: "2px 5px",
-        whiteSpace: "nowrap",
+        borderRadius: "999px",
+        border: "1px solid rgba(2,84,236,0.14)",
+        background: "rgba(2,84,236,0.08)",
+        color: "var(--text-primary)",
+        fontFamily: "JetBrains Mono, monospace",
+        fontSize: "10px",
+        padding: "5px 9px",
       }}
     >
-      {name}
+      {text}
     </span>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Source label
-// ---------------------------------------------------------------------------
-
-const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
-  mitre: { bg: "rgba(255,0,0,0.15)", text: "#FF6B6B" },
-  etda: { bg: "rgba(97,151,255,0.15)", text: "#6197FF" },
-  otx: { bg: "rgba(255,165,0,0.15)", text: "#FFA500" },
-  misp: { bg: "rgba(255,11,190,0.15)", text: "#FF0BBE" },
-  opencti: { bg: "rgba(2,84,236,0.2)", text: "#0254EC" },
-  manual: { bg: "rgba(255,191,255,0.1)", text: "#FFBFFF" },
-}
-
 function SourceLabel({ source }: { source: string }) {
-  const style = SOURCE_COLORS[source] ?? { bg: "rgba(97,151,255,0.1)", text: "#6197FF" }
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        background: style.bg,
-        color: style.text,
-        border: `1px solid ${style.text}40`,
-        borderRadius: "3px",
-        fontFamily: "monospace",
-        fontSize: "8px",
+        borderRadius: "999px",
+        border: "1px solid rgba(2,84,236,0.14)",
+        background: "rgba(255,191,255,0.18)",
+        color: "var(--text-primary)",
+        fontFamily: "JetBrains Mono, monospace",
+        fontSize: "10px",
         fontWeight: 700,
-        padding: "2px 5px",
+        padding: "5px 9px",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
       }}
@@ -151,155 +77,180 @@ function SourceLabel({ source }: { source: string }) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// CardBack
-// ---------------------------------------------------------------------------
-
 export function CardBack({ actor, className }: CardBackProps) {
-  const displayTTPs = actor.ttps.slice(0, 5)
-  const displayCampaigns = actor.campaigns.slice(0, 3)
-  const displayTools = actor.tools.slice(0, 8)
-  const displaySectors = actor.sectors.slice(0, 3)
-  const displayGeos = actor.geographies.slice(0, 3)
-  const uniqueSources = Array.from(new Set(actor.sources.map((s) => s.source)))
+  const ttps = actor.ttps.slice(0, 4)
+  const campaigns = actor.campaigns.slice(0, 2)
+  const tools = actor.tools.slice(0, 5)
+  const regions = actor.geographies.slice(0, 4)
+  const sources = Array.from(new Set(actor.sources.map((source) => source.source)))
+  const rarityColor = getRarityColor(actor.rarity)
 
   return (
     <div
-      className={className}
+      className={`card-face ${className ?? ""}`.trim()}
       style={{
-        width: "280px",
-        height: "392px",
-        borderRadius: "12px",
-        background: "linear-gradient(160deg, #00123F 0%, #0a1a4a 100%)",
+        background: "var(--card-bg)",
+        color: "var(--text-primary)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        fontFamily: "sans-serif",
-        position: "relative",
-        border: `2px solid ${getRarityColor(actor.rarity)}60`,
-        boxShadow: `0 0 12px ${getRarityColor(actor.rarity)}30`,
+        border: `2px solid ${rarityColor}`,
+        boxShadow: `0 0 16px ${rarityColor}55, 0 18px 45px -28px ${rarityColor}55`,
       }}
     >
-      {/* ------------------------------------------------------------------ */}
-      {/* Header                                                              */}
-      {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          background: "linear-gradient(90deg, #00123F 0%, #173AAA 100%)",
-          padding: "6px 10px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1px",
-          borderBottom: `1px solid ${getRarityColor(actor.rarity)}40`,
-          flexShrink: 0,
+          background: "var(--card-header)",
+          borderBottom: `1px solid ${rarityColor}45`,
+          padding: "14px 16px",
         }}
       >
-        <div
+        <p
           style={{
-            fontFamily: "monospace",
-            fontSize: "8px",
-            color: "#6197FF",
+            margin: 0,
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: "10px",
+            color: "var(--text-muted)",
             textTransform: "uppercase",
             letterSpacing: "0.18em",
           }}
         >
-          Threat Intelligence
-        </div>
-        <div
+          Intel Notes
+        </p>
+        <h3
           style={{
-            fontFamily: "sans-serif",
-            fontWeight: 800,
-            fontSize: "13px",
-            color: "#FFFFFF",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            margin: "6px 0 0",
+            fontFamily: "Orbitron, sans-serif",
+            fontSize: "22px",
+            lineHeight: 1.05,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
           }}
         >
           {actor.canonicalName}
-        </div>
+        </h3>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Scrollable content                                                  */}
-      {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          flex: 1,
-          padding: "8px 10px",
+          padding: "16px",
           display: "flex",
           flexDirection: "column",
-          gap: "8px",
+          gap: "14px",
           overflow: "hidden",
+          flex: 1,
         }}
       >
-        {/* TTPs */}
-        {displayTTPs.length > 0 && (
-          <div>
-            <SectionHeader title="Techniques & Tactics" icon="⚔" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-              {displayTTPs.map((ttp) => (
-                <TTPChip
-                  key={ttp.techniqueId}
-                  techniqueId={ttp.techniqueId}
-                  tactic={ttp.tactic}
-                />
+        <div
+          style={{
+            borderRadius: "18px",
+            background: "var(--card-panel)",
+            border: "1px solid rgba(2,84,236,0.12)",
+            padding: "14px",
+          }}
+        >
+          <SectionHeader title="Profile" />
+          <p
+            style={{
+              margin: 0,
+              fontSize: "12px",
+              lineHeight: 1.6,
+              color: "var(--text-muted)",
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 5,
+              overflow: "hidden",
+            }}
+          >
+            {actor.description}
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "12px",
+          }}
+        >
+          <div
+            style={{
+              borderRadius: "18px",
+              background: "var(--card-panel)",
+              border: "1px solid rgba(2,84,236,0.12)",
+              padding: "14px",
+            }}
+          >
+            <SectionHeader title="Tools" />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {tools.map((tool) => (
+                <ListChip key={tool} text={tool} />
               ))}
-              {actor.ttps.length > 5 && (
-                <span
-                  style={{
-                    fontFamily: "monospace",
-                    fontSize: "8px",
-                    color: "#6197FF",
-                    alignSelf: "center",
-                  }}
-                >
-                  +{actor.ttps.length - 5} more
-                </span>
-              )}
             </div>
           </div>
-        )}
 
-        {/* Campaigns */}
-        {displayCampaigns.length > 0 && (
-          <div>
-            <SectionHeader title="Known Campaigns" icon="📋" />
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              {displayCampaigns.map((campaign) => (
+          <div
+            style={{
+              borderRadius: "18px",
+              background: "var(--card-panel)",
+              border: "1px solid rgba(2,84,236,0.12)",
+              padding: "14px",
+            }}
+          >
+            <SectionHeader title="Targets" />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {regions.map((region) => (
+                <ListChip key={region} text={region} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            borderRadius: "18px",
+            background: "var(--card-panel)",
+            border: "1px solid rgba(2,84,236,0.12)",
+            padding: "14px",
+          }}
+        >
+          <SectionHeader title="ATT&CK Techniques" />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {ttps.map((ttp) => (
+              <ListChip key={ttp.techniqueId} text={`${ttp.techniqueId} ${ttp.techniqueName}`} />
+            ))}
+          </div>
+        </div>
+
+        {campaigns.length > 0 && (
+          <div
+            style={{
+              borderRadius: "18px",
+              background: "var(--card-panel)",
+              border: "1px solid rgba(2,84,236,0.12)",
+              padding: "14px",
+            }}
+          >
+            <SectionHeader title="Campaigns" />
+            <div style={{ display: "grid", gap: "8px" }}>
+              {campaigns.map((campaign) => (
                 <div
                   key={campaign.name}
                   style={{
-                    background: "rgba(23,58,170,0.2)",
-                    border: "1px solid rgba(97,151,255,0.15)",
-                    borderRadius: "4px",
-                    padding: "4px 6px",
+                    borderRadius: "14px",
+                    padding: "10px 12px",
+                    background: "rgba(2,84,236,0.06)",
+                    border: "1px solid rgba(2,84,236,0.1)",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "baseline",
-                      gap: "6px",
-                      marginBottom: "1px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: "9px",
-                        color: "#FFBFFF",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {campaign.name}
-                    </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                    <span style={{ fontWeight: 700, fontSize: "12px" }}>{campaign.name}</span>
                     {campaign.year && (
                       <span
                         style={{
-                          fontFamily: "monospace",
-                          fontSize: "8px",
-                          color: "#6197FF",
+                          fontFamily: "JetBrains Mono, monospace",
+                          fontSize: "10px",
+                          color: "var(--text-muted)",
                         }}
                       >
                         {campaign.year}
@@ -308,15 +259,10 @@ export function CardBack({ actor, className }: CardBackProps) {
                   </div>
                   <p
                     style={{
-                      margin: 0,
-                      fontFamily: "sans-serif",
-                      fontSize: "8px",
-                      color: "rgba(255,255,255,0.55)",
-                      lineHeight: 1.4,
-                      overflow: "hidden",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
+                      margin: "6px 0 0",
+                      fontSize: "11px",
+                      lineHeight: 1.5,
+                      color: "var(--text-muted)",
                     }}
                   >
                     {campaign.description}
@@ -326,144 +272,22 @@ export function CardBack({ actor, className }: CardBackProps) {
             </div>
           </div>
         )}
-
-        {/* Tools */}
-        {displayTools.length > 0 && (
-          <div>
-            <SectionHeader title="Tools & Malware" icon="🔧" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
-              {displayTools.map((tool) => (
-                <ToolChip key={tool} name={tool} />
-              ))}
-              {actor.tools.length > 8 && (
-                <span
-                  style={{
-                    fontFamily: "monospace",
-                    fontSize: "8px",
-                    color: "#6197FF",
-                    alignSelf: "center",
-                  }}
-                >
-                  +{actor.tools.length - 8}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Stats grid: sectors + geographies */}
-        {(displaySectors.length > 0 || displayGeos.length > 0) && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "6px",
-            }}
-          >
-            {displaySectors.length > 0 && (
-              <div>
-                <SectionHeader title="Sectors" icon="🏭" />
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  {displaySectors.map((sector) => (
-                    <span
-                      key={sector}
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: "8px",
-                        color: "#FFBFFF",
-                      }}
-                    >
-                      • {sector}
-                    </span>
-                  ))}
-                  {actor.sectors.length > 3 && (
-                    <span
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: "8px",
-                        color: "#6197FF",
-                      }}
-                    >
-                      +{actor.sectors.length - 3} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-            {displayGeos.length > 0 && (
-              <div>
-                <SectionHeader title="Targets" icon="🌍" />
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  {displayGeos.map((geo) => (
-                    <span
-                      key={geo}
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: "8px",
-                        color: "#FFBFFF",
-                      }}
-                    >
-                      • {geo}
-                    </span>
-                  ))}
-                  {actor.geographies.length > 3 && (
-                    <span
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: "8px",
-                        color: "#6197FF",
-                      }}
-                    >
-                      +{actor.geographies.length - 3} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Sources footer                                                      */}
-      {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          borderTop: "1px solid rgba(97,151,255,0.2)",
-          padding: "5px 10px 7px",
+          borderTop: "1px solid rgba(2,84,236,0.12)",
+          padding: "12px 16px 16px",
+          background: "rgba(2,84,236,0.04)",
           display: "flex",
-          alignItems: "center",
-          gap: "4px",
-          flexShrink: 0,
-          background: "rgba(0,18,63,0.6)",
           flexWrap: "wrap",
+          gap: "6px",
         }}
       >
-        <span
-          style={{
-            fontFamily: "monospace",
-            fontSize: "7px",
-            color: "#6197FF",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            marginRight: "2px",
-          }}
-        >
-          Sources:
-        </span>
-        {uniqueSources.map((src) => (
-          <SourceLabel key={src} source={src} />
+        {sources.map((source) => (
+          <SourceLabel key={source} source={source} />
         ))}
       </div>
-
-      {/* Rarity-colored bottom accent line */}
-      <div
-        style={{
-          height: "3px",
-          background: `linear-gradient(90deg, transparent, ${getRarityColor(actor.rarity)}, transparent)`,
-          flexShrink: 0,
-        }}
-      />
     </div>
   )
 }

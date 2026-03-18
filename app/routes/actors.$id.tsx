@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router"
 import { useLoaderData, Link } from "react-router"
-import { supabase } from "~/lib/supabase.server"
+import { getSupabaseServerClient } from "~/lib/supabase.server"
 import { ThreatActorCard } from "~/components/ThreatActorCard"
 import { getRarityColor } from "~/schema"
 import type { ThreatActor } from "~/schema"
@@ -35,6 +35,11 @@ function mapToActor(row: Record<string, unknown>): ThreatActor {
 }
 
 export async function loader({ params }: LoaderFunctionArgs) {
+  if (!params.id) {
+    throw new Response("Not Found", { status: 404 })
+  }
+
+  const supabase = getSupabaseServerClient()
   const { data, error } = await supabase
     .from("actors")
     .select("*")

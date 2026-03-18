@@ -3,12 +3,26 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router"
 import appCss from "./app.css?url"
 import { Navigation } from "~/components/Navigation"
 
+const themeInitScript = `
+  (() => {
+    try {
+      const storedTheme = window.localStorage.getItem("threatdex-theme")
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+      document.documentElement.dataset.theme = storedTheme || systemTheme
+    } catch {
+      document.documentElement.dataset.theme = "dark"
+    }
+  })();
+`
+
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: appCss },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@500;700;800;900&family=Space+Grotesk:wght@400;500;700&display=swap",
   },
 ]
 
@@ -25,14 +39,15 @@ export function meta() {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body style={{ backgroundColor: "#00123F", minHeight: "100vh", margin: 0 }}>
+      <body className="app-shell">
         {children}
         <ScrollRestoration />
         <Scripts />

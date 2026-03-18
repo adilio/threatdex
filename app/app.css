@@ -1,32 +1,229 @@
 @import "tailwindcss";
 
+:root {
+  --surface-bg: #f4f8ff;
+  --surface-bg-secondary: #ffffff;
+  --surface-nav: rgba(244, 248, 255, 0.88);
+  --surface-panel: rgba(255, 255, 255, 0.82);
+  --surface-panel-strong: rgba(255, 255, 255, 0.94);
+  --surface-chip: rgba(2, 84, 236, 0.08);
+  --text-primary: #01123f;
+  --text-muted: rgba(1, 18, 63, 0.64);
+  --border-primary: rgba(2, 84, 236, 0.16);
+  --hero-shadow: rgba(2, 84, 236, 0.12);
+  --card-bg: linear-gradient(180deg, #ffffff 0%, #edf3ff 100%);
+  --card-header: linear-gradient(90deg, rgba(2, 84, 236, 0.1) 0%, rgba(255, 191, 255, 0.28) 100%);
+  --card-hero-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(237, 243, 255, 0.96) 100%);
+  --card-panel: rgba(255, 255, 255, 0.88);
+  --card-grid-line: rgba(2, 84, 236, 0.08);
+}
+
+:root[data-theme="dark"] {
+  --surface-bg: #01123f;
+  --surface-bg-secondary: #061944;
+  --surface-nav: rgba(1, 18, 63, 0.82);
+  --surface-panel: rgba(8, 28, 79, 0.8);
+  --surface-panel-strong: rgba(10, 26, 74, 0.92);
+  --surface-chip: rgba(97, 151, 255, 0.12);
+  --text-primary: #f4f8ff;
+  --text-muted: rgba(244, 248, 255, 0.68);
+  --border-primary: rgba(97, 151, 255, 0.16);
+  --hero-shadow: rgba(97, 151, 255, 0.22);
+  --card-bg: linear-gradient(180deg, #07183f 0%, #0b1f54 100%);
+  --card-header: linear-gradient(90deg, rgba(1, 18, 63, 0.95) 0%, rgba(23, 58, 170, 0.9) 100%);
+  --card-hero-overlay: linear-gradient(180deg, rgba(7, 24, 63, 0) 0%, rgba(7, 24, 63, 0.96) 100%);
+  --card-panel: rgba(10, 28, 74, 0.76);
+  --card-grid-line: rgba(97, 151, 255, 0.08);
+}
+
 @theme {
   --color-wiz-blue: #0254ec;
   --color-purplish-pink: #ffbfff;
   --color-cloudy-white: #ffffff;
-  --color-serious-blue: #00123f;
+  --color-serious-blue: #01123f;
   --color-blue-shadow: #173aaa;
   --color-sky-blue: #6197ff;
-  --color-light-sky-blue: #978bff;
-  --color-pink-shadow: #c64ba4;
-  --color-vibrant-pink: #ff0bbe;
+  --color-light-sky-blue: #97bbff;
+  --color-pink-shadow: #c56ba4;
+  --color-vibrant-pink: #ff9bbe;
   --color-frosting-pink: #ffbfd6;
   --color-surprising-yellow: #ffff00;
-
-  --font-family-mono: "JetBrains Mono", "Fira Code", monospace;
-  --font-family-sans: "Inter", sans-serif;
+  --color-app-bg: var(--surface-bg);
+  --color-app-bg-secondary: var(--surface-bg-secondary);
+  --color-app-nav: var(--surface-nav);
+  --color-app-panel: var(--surface-panel);
+  --color-app-panel-strong: var(--surface-panel-strong);
+  --color-app-chip: var(--surface-chip);
+  --color-app-text: var(--text-primary);
+  --color-app-muted: var(--text-muted);
+  --color-app-border: var(--border-primary);
+  --font-family-mono: "JetBrains Mono", monospace;
+  --font-family-sans: "Space Grotesk", sans-serif;
+  --font-family-display: "Orbitron", sans-serif;
 }
 
-/* Rarity glow classes for cards */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at top left, rgba(2, 84, 236, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(255, 191, 255, 0.24), transparent 24%),
+    linear-gradient(180deg, var(--surface-bg) 0%, var(--surface-bg-secondary) 100%);
+  font-family: "Space Grotesk", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(2, 84, 236, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(255, 191, 255, 0.24), transparent 24%),
+    linear-gradient(180deg, var(--surface-bg) 0%, var(--surface-bg-secondary) 100%);
+}
+
+.dex-panel {
+  border: 1px solid var(--border-primary);
+  border-radius: 2rem;
+  background: var(--surface-panel);
+  box-shadow:
+    0 24px 80px -40px var(--hero-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(24px);
+}
+
+.dex-subpanel {
+  border: 1px solid var(--border-primary);
+  border-radius: 1.5rem;
+  background: var(--surface-panel-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  padding: 1.25rem;
+}
+
+.dex-grid {
+  background-image:
+    linear-gradient(to right, var(--card-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--card-grid-line) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 85%);
+}
+
+.dex-kicker {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.dex-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(2, 84, 236, 0.2);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0254ec 0%, #4d85eb 100%);
+  color: white;
+  font-weight: 700;
+  padding: 0.875rem 1.4rem;
+  box-shadow: 0 20px 40px -28px rgba(2, 84, 236, 0.8);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.dex-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 24px 44px -26px rgba(2, 84, 236, 0.86);
+}
+
+.dex-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.dex-nav-link:hover {
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+  background: var(--surface-chip);
+}
+
+.dex-icon-button,
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border-primary);
+  border-radius: 999px;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.dex-icon-button {
+  padding-inline: 0.9rem;
+}
+
+.dex-icon-button:hover,
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(2, 84, 236, 0.3);
+  background: var(--surface-panel-strong);
+}
+
+.card-shell {
+  width: min(100%, 340px);
+  aspect-ratio: 5 / 7;
+}
+
+.card-face {
+  width: 100%;
+  height: 100%;
+  border-radius: 1.35rem;
+  overflow: hidden;
+}
+
 .rarity-glow-mythic {
   box-shadow: 0 0 12px #ffff00, 0 0 30px rgba(255, 255, 0, 0.25);
 }
+
 .rarity-glow-legendary {
-  box-shadow: 0 0 10px rgba(255, 11, 190, 0.7), 0 0 24px rgba(255, 11, 190, 0.25);
+  box-shadow: 0 0 10px rgba(255, 155, 190, 0.6), 0 0 24px rgba(255, 155, 190, 0.25);
 }
+
 .rarity-glow-epic {
-  box-shadow: 0 0 8px rgba(151, 139, 255, 0.5), 0 0 20px rgba(151, 139, 255, 0.2);
+  box-shadow: 0 0 8px rgba(151, 187, 255, 0.5), 0 0 20px rgba(151, 187, 255, 0.2);
 }
+
 .rarity-glow-rare {
   box-shadow: 0 0 6px rgba(97, 151, 255, 0.4);
 }

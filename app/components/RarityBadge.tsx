@@ -1,4 +1,3 @@
-import React from "react"
 import type { Rarity } from "~/schema"
 
 interface RarityBadgeProps {
@@ -12,24 +11,24 @@ const RARITY_STYLES: Record<
 > = {
   MYTHIC: {
     background: "#FFFF00",
-    color: "#00123F",
+    color: "#01123F",
     border: "1px solid #FFFF00",
     boxShadow: "0 0 8px #FFFF00, 0 0 16px rgba(255,255,0,0.4)",
   },
   LEGENDARY: {
-    background: "#FF0BBE",
-    color: "#FFFFFF",
-    border: "1px solid #FF0BBE",
-    boxShadow: "0 0 6px rgba(255,11,190,0.5)",
+    background: "#FF9BBE",
+    color: "#01123F",
+    border: "1px solid #FF9BBE",
+    boxShadow: "0 0 6px rgba(255,155,190,0.45)",
   },
   EPIC: {
-    background: "#978BFF",
-    color: "#00123F",
-    border: "1px solid #978BFF",
+    background: "#97BBFF",
+    color: "#01123F",
+    border: "1px solid #97BBFF",
   },
   RARE: {
     background: "#6197FF",
-    color: "#00123F",
+    color: "#01123F",
     border: "1px solid #6197FF",
   },
 }
