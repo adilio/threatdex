@@ -134,10 +134,18 @@ function sortActors(
           new Date(String(a.last_updated ?? 0)).getTime()
         )
       case "recent_desc": {
+        const entityDelta = actorEntityScore(b) - actorEntityScore(a)
+        if (entityDelta !== 0) return entityDelta
+
         const lastSeenCompare = String(b.last_seen ?? "").localeCompare(
           String(a.last_seen ?? ""),
         )
         if (lastSeenCompare !== 0) return lastSeenCompare
+
+        const threatDelta =
+          Number(b.threat_level ?? 0) - Number(a.threat_level ?? 0)
+        if (threatDelta !== 0) return threatDelta
+
         return (
           new Date(String(b.last_updated ?? 0)).getTime() -
           new Date(String(a.last_updated ?? 0)).getTime()
@@ -158,6 +166,50 @@ function sortActors(
   return items
 }
 
+function actorEntityScore(row: Record<string, unknown>) {
+  const name = String(row.canonical_name ?? "").trim()
+  const aliases = (row.aliases as unknown[] | undefined) ?? []
+  const sources = (row.sources as unknown[] | undefined) ?? []
+  const threatLevel = Number(row.threat_level ?? 0)
+  const hasMitreId = Boolean(row.mitre_id)
+  const hasCountryCode = Boolean(row.country_code)
+  const wordCount = name.split(/[\s-]+/).filter(Boolean).length
+  const looksHeadlineLike =
+    /campaign|attack|backdoor|playbook|hits|unpacking|report|analysis|alert|brief/i.test(
+      name,
+    ) || wordCount >= 7
+
+  let score = 0
+
+  if (hasMitreId) score += 5
+  if (aliases.length >= 2) score += 3
+  if (sources.length >= 2) score += 2
+  if (hasCountryCode) score += 1
+  if (threatLevel >= 6) score += 2
+  if (threatLevel >= 8) score += 1
+  if (looksHeadlineLike && !hasMitreId) score -= 5
+  if (name.length > 60 && !hasMitreId) score -= 2
+
+  return score
+}
+
+function isPublishableActor(row: Record<string, unknown>) {
+  const name = String(row.canonical_name ?? "").trim()
+  const aliases = (row.aliases as unknown[] | undefined) ?? []
+  const threatLevel = Number(row.threat_level ?? 0)
+  const hasMitreId = Boolean(row.mitre_id)
+  const looksHeadlineLike =
+    /campaign|attack|backdoor|playbook|hits|unpacking|report|analysis|alert|brief/i.test(
+      name,
+    )
+
+  if (!name) return false
+  if (hasMitreId) return true
+  if (looksHeadlineLike && aliases.length < 2 && threatLevel < 6) return false
+
+  return actorEntityScore(row) >= 2
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const supabase = getSupabaseServerClient()
   const url = new URL(request.url)
@@ -168,29 +220,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const sort = (url.searchParams.get("sort") ?? "threat_desc") as SortOption
   const offset = parseInt(url.searchParams.get("offset") ?? "0", 10)
 
-  let query = supabase.from("actors").select("*", { count: "exact" })
-
-  switch (sort) {
-    case "name_asc":
-      query = query.order("canonical_name", { ascending: true })
-      break
-    case "updated_desc":
-      query = query.order("last_updated", { ascending: false })
-      break
-    case "recent_desc":
-      query = query
-        .order("last_seen", { ascending: false, nullsFirst: false })
-        .order("last_updated", { ascending: false })
-      break
-    case "threat_desc":
-    default:
-      query = query
-        .order("threat_level", { ascending: false })
-        .order("canonical_name", { ascending: true })
-      break
-  }
-
-  query = query.range(offset, offset + LIMIT - 1)
+  let query = supabase.from("actors").select("*")
 
   if (search) {
     const { data, error } = await (supabase as any)
@@ -198,7 +228,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     if (error) throw new Response("Failed to load actors", { status: 500 })
 
-    const sorted = sortActors((data ?? []) as Record<string, unknown>[], sort)
+    const publishable = ((data ?? []) as Record<string, unknown>[]).filter(
+      isPublishableActor,
+    )
+    const sorted = sortActors(publishable, sort)
     const paged = sorted.slice(offset, offset + LIMIT)
 
     return {
@@ -214,12 +247,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (motivation) query = query.contains("motivation", [motivation])
   if (rarity) query = query.eq("rarity", rarity)
 
-  const { data, count, error } = await query
+  const { data, error } = await query
   if (error) throw new Response("Failed to load actors", { status: 500 })
 
+  const rows = (data ?? []) as Record<string, unknown>[]
+  const publishable = rows.filter(isPublishableActor)
+  const sorted = sortActors(publishable, sort)
+  const paged = sorted.slice(offset, offset + LIMIT)
+
   return {
-    items: ((data ?? []) as Record<string, unknown>[]).map(mapToActor),
-    total: count ?? 0,
+    items: paged.map(mapToActor),
+    total: sorted.length,
     limit: LIMIT,
     offset,
     searchParams: { q: search, country, motivation, rarity, sort },
