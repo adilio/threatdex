@@ -50,7 +50,7 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
       - name: Sync OTX
-        if: (inputs.source == 'otx' || inputs.source == 'all' || github.event_name == 'schedule') && secrets.OTX_API_KEY != ''
+        if: inputs.source == 'otx' || inputs.source == 'all' || github.event_name == 'schedule'
         run: pnpm workers:otx
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
