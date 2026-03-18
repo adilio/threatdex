@@ -6,7 +6,7 @@ import { getRarityColor } from "~/schema"
 interface CardBackProps {
   actor: ThreatActor
   className?: string
-  variant?: "compact" | "expanded"
+  variant?: "compact" | "expanded" | "panel"
 }
 
 function renderRichText(text: string) {
@@ -145,6 +145,7 @@ export function CardBack({
   className,
   variant = "compact",
 }: CardBackProps) {
+  const isPanel = variant === "panel"
   const compact = variant === "compact"
   const ttps = compact ? actor.ttps.slice(0, 4) : actor.ttps
   const campaigns = compact ? actor.campaigns.slice(0, 2) : actor.campaigns
@@ -152,6 +153,206 @@ export function CardBack({
   const regions = compact ? actor.geographies.slice(0, 6) : actor.geographies
   const sources = Array.from(new Set(actor.sources.map((source) => source.source)))
   const rarityColor = getRarityColor(actor.rarity)
+
+  const borderRadius = compact ? "18px" : "24px"
+  const sectionPad = compact ? "14px" : "18px"
+  const fontSize = { body: compact ? "12px" : "15px", chip: compact ? "10px" : "11px", label: compact ? "11px" : "13px" }
+
+  const contentSections = (
+    <>
+      <div
+        style={{
+          borderRadius,
+          background: "var(--card-panel)",
+          border: "1px solid rgba(2,84,236,0.12)",
+          padding: sectionPad,
+        }}
+      >
+        <SectionHeader title="Profile" />
+        <p
+          style={{
+            margin: 0,
+            fontSize: fontSize.body,
+            lineHeight: 1.7,
+            color: "var(--text-muted)",
+            overflowWrap: "anywhere",
+            wordBreak: "break-word",
+          }}
+        >
+          {renderRichText(actor.description)}
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: compact ? "12px" : "16px",
+        }}
+      >
+        <div
+          style={{
+            borderRadius,
+            background: "var(--card-panel)",
+            border: "1px solid rgba(2,84,236,0.12)",
+            padding: sectionPad,
+          }}
+        >
+          <SectionHeader title="Tools" />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            {tools.length > 0 ? (
+              tools.map((tool) => (
+                <ListChip key={tool} text={tool} compact={compact} />
+              ))
+            ) : (
+              <span style={{ color: "var(--text-muted)", fontSize: fontSize.label }}>
+                No tools listed
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div
+          style={{
+            borderRadius,
+            background: "var(--card-panel)",
+            border: "1px solid rgba(2,84,236,0.12)",
+            padding: sectionPad,
+          }}
+        >
+          <SectionHeader title="Targets" />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            {regions.length > 0 ? (
+              regions.map((region) => (
+                <ListChip key={region} text={region} compact={compact} />
+              ))
+            ) : (
+              <span style={{ color: "var(--text-muted)", fontSize: fontSize.label }}>
+                No regions listed
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          borderRadius,
+          background: "var(--card-panel)",
+          border: "1px solid rgba(2,84,236,0.12)",
+          padding: sectionPad,
+        }}
+      >
+        <SectionHeader title="ATT&CK Techniques" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          {ttps.length > 0 ? (
+            ttps.map((ttp) => (
+              <ListChip
+                key={`${ttp.techniqueId}-${ttp.techniqueName}`}
+                text={`${ttp.techniqueId} ${ttp.techniqueName}`}
+                compact={compact}
+              />
+            ))
+          ) : (
+            <span style={{ color: "var(--text-muted)", fontSize: fontSize.label }}>
+              No ATT&CK techniques listed
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          borderRadius,
+          background: "var(--card-panel)",
+          border: "1px solid rgba(2,84,236,0.12)",
+          padding: sectionPad,
+        }}
+      >
+        <SectionHeader title="Campaigns" />
+        <div style={{ display: "grid", gap: compact ? "8px" : "12px" }}>
+          {campaigns.length > 0 ? (
+            campaigns.map((campaign) => (
+              <div
+                key={campaign.name}
+                style={{
+                  borderRadius: compact ? "14px" : "18px",
+                  padding: compact ? "10px 12px" : "14px 16px",
+                  background: "rgba(2,84,236,0.06)",
+                  border: "1px solid rgba(2,84,236,0.1)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    alignItems: "baseline",
+                  }}
+                >
+                  <span style={{ fontWeight: 800, fontSize: compact ? "12px" : "15px" }}>
+                    {campaign.name}
+                  </span>
+                  {campaign.year && (
+                    <span
+                      style={{
+                        fontFamily: "JetBrains Mono, monospace",
+                        fontSize: fontSize.chip,
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      {campaign.year}
+                    </span>
+                  )}
+                </div>
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: compact ? "11px" : "14px",
+                    lineHeight: 1.6,
+                    color: "var(--text-muted)",
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {renderRichText(campaign.description)}
+                </p>
+              </div>
+            ))
+          ) : (
+            <span style={{ color: "var(--text-muted)", fontSize: fontSize.label }}>
+              No campaigns listed
+            </span>
+          )}
+        </div>
+      </div>
+    </>
+  )
+
+  const sourceFooter = (
+    <div
+      style={{
+        borderTop: "1px solid rgba(2,84,236,0.12)",
+        paddingTop: "14px",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "8px",
+      }}
+    >
+      {sources.map((source) => (
+        <SourceLabel key={source} source={source} compact={compact} />
+      ))}
+    </div>
+  )
+
+  if (isPanel) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {contentSections}
+        {sourceFooter}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -244,172 +445,7 @@ export function CardBack({
           flex: 1,
         }}
       >
-        <div
-          style={{
-            borderRadius: compact ? "18px" : "24px",
-            background: "var(--card-panel)",
-            border: "1px solid rgba(2,84,236,0.12)",
-            padding: compact ? "14px" : "18px",
-          }}
-        >
-          <SectionHeader title="Profile" />
-          <p
-            style={{
-              margin: 0,
-              fontSize: compact ? "12px" : "15px",
-              lineHeight: 1.7,
-              color: "var(--text-muted)",
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
-          >
-            {renderRichText(actor.description)}
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: compact ? "1fr 1fr" : "1fr 1fr",
-            gap: compact ? "12px" : "16px",
-          }}
-        >
-          <div
-            style={{
-              borderRadius: compact ? "18px" : "24px",
-              background: "var(--card-panel)",
-              border: "1px solid rgba(2,84,236,0.12)",
-              padding: compact ? "14px" : "18px",
-            }}
-          >
-            <SectionHeader title="Tools" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {tools.length > 0 ? (
-                tools.map((tool) => (
-                  <ListChip key={tool} text={tool} compact={compact} />
-                ))
-              ) : (
-                <span style={{ color: "var(--text-muted)", fontSize: compact ? "11px" : "13px" }}>
-                  No tools listed
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div
-            style={{
-              borderRadius: compact ? "18px" : "24px",
-              background: "var(--card-panel)",
-              border: "1px solid rgba(2,84,236,0.12)",
-              padding: compact ? "14px" : "18px",
-            }}
-          >
-            <SectionHeader title="Targets" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {regions.length > 0 ? (
-                regions.map((region) => (
-                  <ListChip key={region} text={region} compact={compact} />
-                ))
-              ) : (
-                <span style={{ color: "var(--text-muted)", fontSize: compact ? "11px" : "13px" }}>
-                  No regions listed
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            borderRadius: compact ? "18px" : "24px",
-            background: "var(--card-panel)",
-            border: "1px solid rgba(2,84,236,0.12)",
-            padding: compact ? "14px" : "18px",
-          }}
-        >
-          <SectionHeader title="ATT&CK Techniques" />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {ttps.length > 0 ? (
-              ttps.map((ttp) => (
-                <ListChip
-                  key={`${ttp.techniqueId}-${ttp.techniqueName}`}
-                  text={`${ttp.techniqueId} ${ttp.techniqueName}`}
-                  compact={compact}
-                />
-              ))
-            ) : (
-              <span style={{ color: "var(--text-muted)", fontSize: compact ? "11px" : "13px" }}>
-                No ATT&CK techniques listed
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div
-          style={{
-            borderRadius: compact ? "18px" : "24px",
-            background: "var(--card-panel)",
-            border: "1px solid rgba(2,84,236,0.12)",
-            padding: compact ? "14px" : "18px",
-          }}
-        >
-          <SectionHeader title="Campaigns" />
-          <div style={{ display: "grid", gap: compact ? "8px" : "12px" }}>
-            {campaigns.length > 0 ? (
-              campaigns.map((campaign) => (
-                <div
-                  key={campaign.name}
-                  style={{
-                    borderRadius: compact ? "14px" : "18px",
-                    padding: compact ? "10px 12px" : "14px 16px",
-                    background: "rgba(2,84,236,0.06)",
-                    border: "1px solid rgba(2,84,236,0.1)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "12px",
-                      alignItems: "baseline",
-                    }}
-                  >
-                    <span style={{ fontWeight: 800, fontSize: compact ? "12px" : "15px" }}>
-                      {campaign.name}
-                    </span>
-                    {campaign.year && (
-                      <span
-                        style={{
-                          fontFamily: "JetBrains Mono, monospace",
-                          fontSize: compact ? "10px" : "11px",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        {campaign.year}
-                      </span>
-                    )}
-                  </div>
-                  <p
-                    style={{
-                      margin: "6px 0 0",
-                      fontSize: compact ? "11px" : "14px",
-                      lineHeight: 1.6,
-                      color: "var(--text-muted)",
-                      overflowWrap: "anywhere",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {renderRichText(campaign.description)}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <span style={{ color: "var(--text-muted)", fontSize: compact ? "11px" : "13px" }}>
-                No campaigns listed
-              </span>
-            )}
-          </div>
-        </div>
+        {contentSections}
       </div>
 
       <div
