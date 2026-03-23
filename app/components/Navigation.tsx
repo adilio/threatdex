@@ -23,7 +23,7 @@ export function Navigation() {
           <div>
             <p className="font-display text-xl font-black uppercase tracking-[0.08em] text-app-text">
               <span className="text-wiz-blue">Threat</span>
-              <span className="text-pink-shadow">Dex</span>
+              <span className="text-vibrant-pink">Dex</span>
             </p>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-app-muted">
               Threat Actor Index

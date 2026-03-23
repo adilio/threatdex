@@ -286,7 +286,7 @@ export default function HomePage() {
             <p className="dex-kicker mb-4">Threat Actor Index</p>
             <h1 className="font-display text-5xl font-black uppercase tracking-[0.08em] sm:text-6xl lg:text-7xl">
               <span className="text-wiz-blue">Threat</span>
-              <span className="text-pink-shadow">Dex</span>
+              <span className="text-vibrant-pink">Dex</span>
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-app-muted sm:text-lg">
               Threat intel with the feel of a collectible dossier. Browse actors,

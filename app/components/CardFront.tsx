@@ -129,8 +129,8 @@ function HeroPlaceholder({
 const MOTIVATION_COLORS: Record<string, { bg: string; text: string }> = {
   espionage: { bg: "rgba(2,84,236,0.16)", text: "#0254EC" },
   financial: { bg: "rgba(255,255,0,0.18)", text: "#665700" },
-  sabotage: { bg: "rgba(255,155,190,0.2)", text: "#A10B6E" },
-  hacktivism: { bg: "rgba(151,187,255,0.24)", text: "#173AAA" },
+  sabotage: { bg: "rgba(255,11,190,0.18)", text: "#A10B6E" },
+  hacktivism: { bg: "rgba(151,139,255,0.24)", text: "#173AAA" },
   military: { bg: "rgba(197,107,164,0.18)", text: "#8C2B6A" },
 }
 

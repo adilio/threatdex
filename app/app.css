@@ -43,9 +43,9 @@
   --color-serious-blue: #01123f;
   --color-blue-shadow: #173aaa;
   --color-sky-blue: #6197ff;
-  --color-light-sky-blue: #97bbff;
-  --color-pink-shadow: #c56ba4;
-  --color-vibrant-pink: #ff9bbe;
+  --color-light-sky-blue: #978bff;
+  --color-pink-shadow: #c64ba4;
+  --color-vibrant-pink: #ff0bbe;
   --color-frosting-pink: #ffbfd6;
   --color-surprising-yellow: #ffff00;
   --color-app-bg: var(--surface-bg);
@@ -336,11 +336,11 @@ a {
 }
 
 .rarity-glow-legendary {
-  box-shadow: 0 0 10px rgba(255, 155, 190, 0.6), 0 0 24px rgba(255, 155, 190, 0.25);
+  box-shadow: 0 0 10px rgba(255, 11, 190, 0.6), 0 0 24px rgba(255, 11, 190, 0.25);
 }
 
 .rarity-glow-epic {
-  box-shadow: 0 0 8px rgba(151, 187, 255, 0.5), 0 0 20px rgba(151, 187, 255, 0.2);
+  box-shadow: 0 0 8px rgba(151, 139, 255, 0.5), 0 0 20px rgba(151, 139, 255, 0.2);
 }
 
 .rarity-glow-rare {

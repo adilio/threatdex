@@ -16,15 +16,15 @@ const RARITY_STYLES: Record<
     boxShadow: "0 0 8px #FFFF00, 0 0 16px rgba(255,255,0,0.4)",
   },
   LEGENDARY: {
-    background: "#FF9BBE",
+    background: "#FF0BBE",
     color: "#01123F",
-    border: "1px solid #FF9BBE",
-    boxShadow: "0 0 6px rgba(255,155,190,0.45)",
+    border: "1px solid #FF0BBE",
+    boxShadow: "0 0 6px rgba(255,11,190,0.45)",
   },
   EPIC: {
-    background: "#97BBFF",
+    background: "#978BFF",
     color: "#01123F",
-    border: "1px solid #97BBFF",
+    border: "1px solid #978BFF",
   },
   RARE: {
     background: "#6197FF",

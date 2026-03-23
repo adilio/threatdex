@@ -140,7 +140,10 @@ playwright/.cache/
 # -----------------------------------------------------------------------------
 # Claude Code agent artifacts
 # -----------------------------------------------------------------------------
-.claude/
+# Ignore personal/local settings that may contain keys or hooks
+.claude/settings.json
+.claude/settings.local.json
+# .claude/commands/ is intentionally NOT ignored — shared team slash commands
 
 # -----------------------------------------------------------------------------
 # Misc
