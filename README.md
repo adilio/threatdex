@@ -50,7 +50,7 @@ All data is **TLP:WHITE**. Attribution is approximate and for educational purpos
 
 ```bash
 # Clone the repo
-git clone https://github.com/threatdex/threatdex.git
+git clone https://github.com/adilio/threatdex.git
 cd threatdex
 
 # Install dependencies
@@ -154,7 +154,7 @@ Contributions are very welcome. The best places to start:
 - **Add a data source connector** — see <CONTRIBUTING.md> for the connector template
 - **Improve card data** — spot an error or missing alias? Open a PR
 - **Frontend polish** — new filter types, card animations, export formats
-- **Good first issues** — tagged [`good first issue`](https://github.com/threatdex/threatdex/issues?q=is%3Aissue+label%3A%22good+first+issue%22) in the issue tracker
+- **Good first issues** — tagged [`good first issue`](https://github.com/adilio/threatdex/issues?q=is%3Aissue+label%3A%22good+first+issue%22) in the issue tracker
 
 Please read <CONTRIBUTING.md> and <SECURITY.md> before submitting.
 
@@ -179,6 +179,5 @@ CTI data belongs to its respective upstream sources — MITRE ATT&CK, ETDA, Alie
 -----
 
 <p align="center">
-  Built with ♥ for the security community<br/>
-  <a href="https://threatdex.io">threatdex.io</a> · <a href="https://twitter.com/threatdex">@threatdex</a>
+  <a href="https://github.com/adilio/threatdex">View on GitHub</a> · Made with 💜 in 🇨🇦 by <a href="https://github.com/adilio">Adil Leghari</a>
 </p>

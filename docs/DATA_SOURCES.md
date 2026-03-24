@@ -191,7 +191,7 @@ Nightly at 02:00 UTC when `OTX_API_KEY` is present.
 
 ## 4. MISP (Optional)
 
-**Worker:** `workers/misp-sync/sync.py` (Python, optional connector)
+**Worker:** Not yet implemented — planned for a future release
 **Protocol:** MISP REST API
 **Feature flag:** Disabled if `MISP_URL` or `MISP_API_KEY` is not set
 
@@ -240,7 +240,7 @@ Run manually: `pnpm workers:mitre` or add to the nightly cron by updating
 
 ## 5. OpenCTI (Optional)
 
-**Worker:** `workers/opencti-sync/sync.py` (Python, optional connector)
+**Worker:** Not yet implemented — planned for a future release
 **Protocol:** OpenCTI GraphQL API
 **Feature flag:** Disabled if `OPENCTI_URL` or `OPENCTI_API_KEY` is not set
 
