@@ -28,8 +28,8 @@ if (!HF_API_KEY) {
 // Configuration
 // ---------------------------------------------------------------------------
 
-const HF_MODEL = "stabilityai/stable-diffusion-xl-base-1.0"
-const HF_API_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`
+const HF_MODEL = "black-forest-labs/FLUX.1-schnell"
+const HF_API_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}`
 const STORAGE_BUCKET = "actor-images"
 
 // ---------------------------------------------------------------------------
@@ -164,7 +164,8 @@ export async function generateImageForActor(
     }
 
     if (!response.ok) {
-      console.error(`HF API error ${response.status} for actor ${actorId}`)
+      const body = await response.text()
+      console.error(`HF API error ${response.status} for actor ${actorId}: ${body}`)
       return null
     }
 
