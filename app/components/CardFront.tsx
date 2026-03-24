@@ -554,38 +554,33 @@ export function CardFront({
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px",
+              gap: "8px",
               borderTop: compact ? "none" : "1px solid rgba(2,84,236,0.08)",
               paddingTop: compact ? 0 : "12px",
             }}
           >
-            <div>
-              {!compact && (
-                <div
-                  style={{
-                    fontFamily: "JetBrains Mono, monospace",
-                    fontSize: "11px",
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.14em",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Sophistication
-                </div>
-              )}
-              <SophisticationPips
-                score={sophScore}
-                size={compact ? "compact" : "expanded"}
-              />
-            </div>
             <span
               style={{
                 fontFamily: "JetBrains Mono, monospace",
-                fontSize: compact ? "11px" : "13px",
+                fontSize: "9px",
                 color: "var(--text-muted)",
-                textAlign: "right",
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                flexShrink: 0,
+              }}
+            >
+              {compact ? "Soph" : "Sophistication"}
+            </span>
+            <SophisticationPips
+              score={sophScore}
+              size={compact ? "compact" : "expanded"}
+            />
+            <span
+              style={{
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: compact ? "10px" : "13px",
+                color: "var(--text-muted)",
+                marginLeft: "auto",
               }}
             >
               {actor.sophistication}
