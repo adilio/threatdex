@@ -1,6 +1,121 @@
--- ThreatDex seed data — a handful of well-known threat actors for local dev / demo
--- Run in Supabase Studio (SQL editor) or via:
---   psql $DATABASE_URL -f supabase/seed.sql
+-- ThreatDex database schema, RLS policies, and seed data
+-- Apply via Supabase Studio (SQL editor) or:
+--   psql $DATABASE_URL -f db/schema.sql
+
+-- ============================================================
+-- Schema
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS actors (
+  id TEXT PRIMARY KEY,
+  canonical_name TEXT NOT NULL,
+  aliases JSONB DEFAULT '[]'::jsonb,
+  mitre_id TEXT,
+  country TEXT,
+  country_code CHAR(2),
+  motivation JSONB DEFAULT '[]'::jsonb,
+  threat_level INTEGER CHECK (threat_level BETWEEN 1 AND 10),
+  sophistication TEXT,
+  first_seen CHAR(4),
+  last_seen CHAR(4),
+  sectors JSONB DEFAULT '[]'::jsonb,
+  geographies JSONB DEFAULT '[]'::jsonb,
+  tools JSONB DEFAULT '[]'::jsonb,
+  ttps JSONB DEFAULT '[]'::jsonb,
+  campaigns JSONB DEFAULT '[]'::jsonb,
+  description TEXT,
+  tagline TEXT,
+  rarity TEXT CHECK (rarity IN ('MYTHIC', 'LEGENDARY', 'EPIC', 'RARE')),
+  image_url TEXT,
+  image_prompt TEXT,
+  sources JSONB DEFAULT '[]'::jsonb,
+  tlp TEXT CHECK (tlp IN ('WHITE', 'GREEN')) DEFAULT 'WHITE',
+  last_updated TIMESTAMPTZ DEFAULT NOW(),
+  search_vector TSVECTOR
+);
+
+CREATE TABLE IF NOT EXISTS sync_log (
+  id SERIAL PRIMARY KEY,
+  source TEXT NOT NULL,
+  status TEXT CHECK (status IN ('running', 'complete', 'error')) DEFAULT 'running',
+  records_synced INTEGER DEFAULT 0,
+  error_message TEXT,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  finished_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS actors_search_idx ON actors USING GIN (search_vector);
+CREATE INDEX IF NOT EXISTS actors_country_code_idx ON actors (country_code);
+CREATE INDEX IF NOT EXISTS actors_rarity_idx ON actors (rarity);
+CREATE INDEX IF NOT EXISTS actors_threat_level_idx ON actors (threat_level DESC);
+
+CREATE OR REPLACE FUNCTION actors_search_vector(
+  p_canonical_name TEXT,
+  p_aliases JSONB,
+  p_tools JSONB,
+  p_description TEXT
+) RETURNS TSVECTOR AS $$
+  SELECT
+    setweight(to_tsvector('english', coalesce(p_canonical_name, '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(
+      (SELECT string_agg(v, ' ') FROM jsonb_array_elements_text(p_aliases) v), ''
+    )), 'B') ||
+    setweight(to_tsvector('english', coalesce(
+      (SELECT string_agg(v, ' ') FROM jsonb_array_elements_text(p_tools) v), ''
+    )), 'C') ||
+    setweight(to_tsvector('english', coalesce(p_description, '')), 'D');
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION actors_search_vector_trigger() RETURNS TRIGGER AS $$
+BEGIN
+  NEW.search_vector := actors_search_vector(
+    NEW.canonical_name,
+    NEW.aliases,
+    NEW.tools,
+    NEW.description
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS actors_search_vector_update ON actors;
+CREATE TRIGGER actors_search_vector_update
+  BEFORE INSERT OR UPDATE ON actors
+  FOR EACH ROW
+  EXECUTE FUNCTION actors_search_vector_trigger();
+
+CREATE OR REPLACE FUNCTION search_actors(query text)
+RETURNS SETOF actors AS $$
+  SELECT * FROM actors
+  WHERE search_vector @@ plainto_tsquery('english', query)
+  ORDER BY ts_rank(search_vector, plainto_tsquery('english', query)) DESC;
+$$ LANGUAGE sql STABLE;
+
+-- ============================================================
+-- Row Level Security
+-- ============================================================
+
+ALTER TABLE actors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sync_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "actors_read" ON actors
+  FOR SELECT USING (true);
+
+CREATE POLICY "actors_insert" ON actors
+  FOR INSERT WITH CHECK (auth.role() = 'service_role');
+
+CREATE POLICY "actors_update" ON actors
+  FOR UPDATE USING (auth.role() = 'service_role');
+
+CREATE POLICY "actors_delete" ON actors
+  FOR DELETE USING (auth.role() = 'service_role');
+
+CREATE POLICY "sync_log_all" ON sync_log
+  USING (auth.role() = 'service_role');
+
+-- ============================================================
+-- Seed data
+-- ============================================================
 
 INSERT INTO actors (
   id, canonical_name, aliases, mitre_id,
