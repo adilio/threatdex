@@ -10,6 +10,15 @@ interface CardFrontProps {
   variant?: "compact" | "expanded"
 }
 
+/** Strip markdown links [text](url) → text, and bare URLs, for clean display */
+function cleanDisplayText(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 function getRarityBorderStyle(rarity: Rarity): React.CSSProperties {
   const rarityColor = getRarityColor(rarity)
 
@@ -172,27 +181,29 @@ function MotivationChip({
 function InfoPill({
   label,
   value,
+  compact = false,
 }: {
   label: string
   value: string
+  compact?: boolean
 }) {
   return (
     <div
       style={{
-        borderRadius: "16px",
+        borderRadius: "14px",
         border: "1px solid rgba(2,84,236,0.12)",
         background: "var(--card-panel)",
-        padding: "12px 14px",
+        padding: compact ? "8px 10px" : "12px 14px",
       }}
     >
       <div
         style={{
           fontFamily: "JetBrains Mono, monospace",
-          fontSize: "10px",
+          fontSize: "9px",
           color: "var(--text-muted)",
           textTransform: "uppercase",
           letterSpacing: "0.14em",
-          marginBottom: "6px",
+          marginBottom: compact ? "4px" : "6px",
         }}
       >
         {label}
@@ -200,7 +211,7 @@ function InfoPill({
       <div
         style={{
           fontWeight: 800,
-          fontSize: "16px",
+          fontSize: compact ? "13px" : "16px",
           lineHeight: 1.25,
         }}
       >
@@ -358,7 +369,7 @@ export function CardFront({
 
       <div
         style={{
-          height: compact ? "42%" : "40%",
+          height: compact ? "36%" : "40%",
           minHeight: 0,
           position: "relative",
           overflow: "hidden",
@@ -385,10 +396,10 @@ export function CardFront({
 
       <div
         style={{
-          padding: compact ? "18px 16px 16px" : "24px 22px 22px",
+          padding: compact ? "12px 14px 12px" : "24px 22px 22px",
           display: "flex",
           flexDirection: "column",
-          gap: compact ? "14px" : "18px",
+          gap: compact ? "10px" : "18px",
           flex: 1,
           overflowY: compact ? "hidden" : "auto",
         }}
@@ -417,19 +428,19 @@ export function CardFront({
               </h3>
               <p
                 style={{
-                  margin: "8px 0 0",
-                  fontSize: compact ? "13px" : "16px",
-                  lineHeight: 1.6,
+                  margin: "6px 0 0",
+                  fontSize: compact ? "12px" : "16px",
+                  lineHeight: 1.5,
                   color: "var(--text-muted)",
                   overflowWrap: "anywhere",
                   wordBreak: "break-word",
-                  display: compact ? "-webkit-box" : "block",
-                  WebkitBoxOrient: compact ? "vertical" : undefined,
-                  WebkitLineClamp: compact ? 2 : undefined,
-                  overflow: compact ? "hidden" : "visible",
+                  display: "-webkit-box",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: compact ? 1 : 3,
+                  overflow: "hidden",
                 }}
               >
-                {actor.tagline ?? actor.description}
+                {actor.tagline ?? cleanDisplayText(actor.description)}
               </p>
             </div>
             <div
@@ -480,12 +491,12 @@ export function CardFront({
 
         <div
           style={{
-            borderRadius: compact ? "18px" : "24px",
+            borderRadius: compact ? "14px" : "24px",
             background: "var(--card-panel)",
             border: "1px solid rgba(2,84,236,0.12)",
-            padding: compact ? "14px" : "18px",
+            padding: compact ? "10px 12px" : "18px",
             display: "grid",
-            gap: compact ? "12px" : "16px",
+            gap: compact ? "8px" : "16px",
           }}
         >
           <div>
@@ -509,14 +520,15 @@ export function CardFront({
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
+                gap: "8px",
               }}
             >
               <InfoPill
                 label="Origin"
                 value={`${actor.country ?? "Unknown"} ${getCountryFlag(actor.countryCode)}`}
+                compact
               />
-              <InfoPill label="Active" value={activeWindow} />
+              <InfoPill label="Active" value={activeWindow} compact />
             </div>
           ) : (
             <div
