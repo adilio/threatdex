@@ -107,7 +107,6 @@ function ModalImagePanel({ actor }: { actor: ThreatActor }) {
           gap: "10px",
         }}
       >
-        <RarityBadge rarity={actor.rarity} size="sm" />
         <h3
           style={{
             margin: 0,
