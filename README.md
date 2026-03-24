@@ -137,7 +137,7 @@ SUPABASE_SERVICE_KEY=eyJ...       # Private, server-side + workers only
 
 # Optional — enables enrichment from these sources
 OTX_API_KEY=              # AlienVault OTX
-OPENAI_API_KEY=           # AI hero image generation
+HF_API_KEY=               # AI hero image generation (Hugging Face, free tier available)
 MISP_URL=                 # Your MISP instance
 MISP_API_KEY=
 OPENCTI_URL=              # Your OpenCTI instance

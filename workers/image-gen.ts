@@ -12,16 +12,15 @@
  *   OPENAI_API_KEY=<key> npx tsx workers/image-gen.ts   # processes all actors missing images
  */
 
-import OpenAI from "openai"
 import { supabase, logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
 
 // ---------------------------------------------------------------------------
 // Feature flag
 // ---------------------------------------------------------------------------
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-if (!OPENAI_API_KEY) {
-  console.log("OPENAI_API_KEY not set — skipping image generation")
+const HF_API_KEY = process.env.HF_API_KEY
+if (!HF_API_KEY) {
+  console.log("HF_API_KEY not set — skipping image generation")
   process.exit(0)
 }
 
@@ -29,9 +28,9 @@ if (!OPENAI_API_KEY) {
 // Configuration
 // ---------------------------------------------------------------------------
 
-const IMAGE_SIZE = "1024x1024" as const
-const IMAGE_QUALITY = "standard" as const
-const IMAGE_MODEL = "dall-e-3"
+const HF_MODEL = "stabilityai/stable-diffusion-xl-base-1.0"
+const HF_API_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`
+const STORAGE_BUCKET = "actor-images"
 
 // ---------------------------------------------------------------------------
 // Prompt builder
@@ -137,22 +136,52 @@ export async function generateImageForActor(
   )
 
   try {
-    const client = new OpenAI({ apiKey: OPENAI_API_KEY! })
-    const response = await client.images.generate({
-      model: IMAGE_MODEL,
-      prompt,
-      size: IMAGE_SIZE,
-      quality: IMAGE_QUALITY,
-      n: 1,
+    // Call Hugging Face Inference API — may return 503 while model loads, retry once
+    let response = await fetch(HF_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${HF_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ inputs: prompt }),
+      signal: AbortSignal.timeout(120_000),
     })
 
-    const imageUrl: string | undefined = response.data?.[0]?.url ?? undefined
-    if (!imageUrl) {
-      console.error(`OpenAI returned no image URL for actor ${actorId}`)
+    if (response.status === 503) {
+      const { estimated_time } = (await response.json()) as { estimated_time?: number }
+      const waitMs = Math.min((estimated_time ?? 20) * 1000, 30_000)
+      console.log(`Model loading, retrying in ${waitMs / 1000}s...`)
+      await new Promise((r) => setTimeout(r, waitMs))
+      response = await fetch(HF_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HF_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: prompt }),
+        signal: AbortSignal.timeout(120_000),
+      })
+    }
+
+    if (!response.ok) {
+      console.error(`HF API error ${response.status} for actor ${actorId}`)
       return null
     }
 
-    return imageUrl
+    const imageBuffer = Buffer.from(await response.arrayBuffer())
+    const filePath = `${actorId}.png`
+
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, imageBuffer, { contentType: "image/png", upsert: true })
+
+    if (uploadError) {
+      console.error(`Storage upload failed for actor ${actorId}:`, uploadError.message)
+      return null
+    }
+
+    const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filePath)
+    return urlData.publicUrl
   } catch (err) {
     console.error(`Image generation failed for actor ${actorId}:`, err)
     return null
