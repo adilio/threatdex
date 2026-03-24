@@ -36,36 +36,83 @@ const STORAGE_BUCKET = "actor-images"
 // Prompt builder
 // ---------------------------------------------------------------------------
 
-const SOPHISTICATION_DESCRIPTORS: Record<string, string> = {
-  "Nation-State Elite":
-    "elite nation-state threat actor, cutting-edge cyber warfare capabilities",
-  "Very High": "highly sophisticated advanced persistent threat",
-  High: "sophisticated professional hacker group",
-  Medium: "moderately skilled cybercriminal collective",
-  Low: "script kiddie or low-skill threat actor",
+// Maps words found in names/aliases to a visual creature or entity concept
+const VISUAL_CONCEPTS: Record<string, string> = {
+  bear: "a massive cybernetic bear with glowing circuit-board fur",
+  wolf: "a sleek cybernetic wolf with neon-lit eyes",
+  fox: "a cunning cybernetic fox wreathed in digital flames",
+  snake: "a coiling cybernetic snake made of fiber optic cables",
+  viper: "a venomous cybernetic viper dripping neon toxin",
+  cobra: "a hooded cybernetic cobra with a glowing crest",
+  panda: "a cybernetic giant panda with glowing markings",
+  tiger: "a cybernetic tiger crackling with electric energy",
+  dragon: "a vast cybernetic dragon exhaling streams of binary code",
+  dragonfly: "a giant cybernetic dragonfly with iridescent wings",
+  cat: "a sleek cybernetic cat with holographic eyes",
+  kitten: "a small but menacing cybernetic kitten with oversized neon claws",
+  ant: "a giant cybernetic ant with mandibles made of circuit boards",
+  moth: "a cybernetic moth with luminous wing patterns made of data",
+  worm: "a massive segmented worm made of interlocking circuit boards",
+  spider: "a multi-eyed cybernetic spider spinning webs of data",
+  hawk: "a razor-winged cybernetic hawk diving through digital clouds",
+  eagle: "a cybernetic eagle with wings made of satellite dishes",
+  falcon: "a cybernetic falcon with laser-sight eyes",
+  rhino: "an armoured cybernetic rhinoceros with a glowing horn",
+  typhoon: "a swirling typhoon entity made of data and lightning",
+  storm: "a living storm entity crackling with digital electricity",
+  thunder: "a towering being forged from digital thunder and lightning",
+  volt: "a creature crackling with electric neon energy",
+  lightning: "a being made of pure digital lightning",
+  hurricane: "a roaring hurricane entity made of swirling code",
+  tornado: "a tornado entity of spinning code and broken data",
+  fire: "a flaming digital entity wreathed in neon fire",
+  frost: "an ice-covered digital entity radiating cold blue light",
+  shadow: "a shadow entity with no face, made of pure darkness and code",
+  ghost: "a translucent ghost entity flickering with corrupted data",
+  phantom: "a phantom entity phasing between dimensions of code",
+  sandworm: "a colossal desert worm surfacing through a sea of circuit boards",
+  lazarus: "a skeletal figure rising from digital ashes, wrapped in resurrection code",
+  sphinx: "a cybernetic sphinx guarding encrypted secrets",
+  titan: "a colossal titan entity made of stacked server racks",
+  golem: "a stone golem whose body is carved from circuit boards",
+  scorpion: "a cybernetic scorpion with a glowing stinger tail",
+  hydra: "a multi-headed cybernetic hydra each head a different attack vector",
+  leviathan: "a sea serpent leviathan made of submerged cables and dark water",
+  mustang: "a wild cybernetic horse with a mane of electric sparks",
+  kimsuky: "a spectral entity wearing a traditional mask with glowing eyes",
+  turla: "a cybernetic snake coiled around a globe of data",
+  gallium: "a liquid metal entity that morphs and flows like molten circuitry",
 }
 
-const MOTIVATION_DESCRIPTORS: Record<string, string> = {
-  espionage: "intelligence gathering and cyber espionage",
-  financial: "financially motivated cybercrime and theft",
-  sabotage: "destructive cyberattacks and sabotage",
-  hacktivism: "ideologically motivated hacktivism",
-  military: "military cyber operations and warfare",
+const RARITY_GLOW: Record<string, string> = {
+  MYTHIC: "surrounded by a god-like chromatic rainbow aura, legendary holographic shimmer, bright yellow energy field",
+  LEGENDARY: "surrounded by a golden metallic aura and deep orange glow",
+  EPIC: "surrounded by a violet holographic energy field",
+  RARE: "surrounded by a cool blue shimmer and neon glow",
 }
 
-const RARITY_STYLE: Record<string, string> = {
-  MYTHIC:
-    "legendary holographic foil card, bright yellow aura, " +
-    "mythic-tier god-like power, chromatic rainbow shimmer",
-  LEGENDARY:
-    "legendary golden foil card, deep orange glow, " +
-    "legendary aura, metallic sheen",
-  EPIC:
-    "epic purple holographic card, violet glow, " +
-    "powerful epic-tier energy field",
-  RARE:
-    "rare blue holographic card, cool blue shimmer, " +
-    "rare-tier energy aura",
+const MOTIVATION_ENERGY: Record<string, string> = {
+  espionage: "radiating a cold calculating blue light",
+  financial: "surrounded by floating golden data coins",
+  sabotage: "with destructive red energy crackling around it",
+  hacktivism: "with chaotic multicolour energy",
+  military: "with a sharp militaristic green energy field",
+}
+
+// Extract a visual concept by scanning all name/alias words against the keyword map
+function extractVisualConcept(name: string, aliases: string[]): string {
+  const allNames = [name, ...aliases].join(" ").toLowerCase()
+  const words = allNames.split(/[\s\-_]+/)
+
+  for (const word of words) {
+    if (VISUAL_CONCEPTS[word]) return VISUAL_CONCEPTS[word]
+  }
+  // Also check multi-word keys
+  for (const [key, concept] of Object.entries(VISUAL_CONCEPTS)) {
+    if (allNames.includes(key)) return concept
+  }
+  // Fallback: use the actor name itself as the creature concept
+  return `a menacing cyber entity known as ${name}`
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -74,49 +121,25 @@ export function buildImagePrompt(actor: Record<string, any>): string {
     (actor["canonical_name"] as string | undefined) ??
     (actor["id"] as string | undefined) ??
     "Unknown Actor"
+  const aliases: string[] = (actor["aliases"] as string[] | undefined) ?? []
   const country: string | undefined = actor["country"] as string | undefined
-  const sophistication: string =
-    (actor["sophistication"] as string | undefined) ?? "High"
-  const motivation: string[] =
-    (actor["motivation"] as string[] | undefined) ?? ["espionage"]
-  const tools: string[] = (actor["tools"] as string[] | undefined) ?? []
+  const motivation: string[] = (actor["motivation"] as string[] | undefined) ?? ["espionage"]
   const rarity: string = (actor["rarity"] as string | undefined) ?? "RARE"
 
-  const baseStyle =
-    "cyberpunk trading card art, dark navy blue background (#00123F), " +
-    "glowing circuit board patterns, neon accent lighting, " +
-    "Wiz-style security aesthetic, dramatic lighting, high detail"
-
-  const sophDesc =
-    SOPHISTICATION_DESCRIPTORS[sophistication] ?? "skilled threat actor"
-
-  const primaryMotivation = motivation[0] ?? "espionage"
-  const motivDesc =
-    MOTIVATION_DESCRIPTORS[primaryMotivation] ?? "cyber operations"
-
-  const countryAesthetic = country
-    ? `, ${country} cultural aesthetic elements, `
+  const creature = extractVisualConcept(name, aliases)
+  const rarityGlow = RARITY_GLOW[rarity] ?? RARITY_GLOW["RARE"]
+  const energyDesc = MOTIVATION_ENERGY[motivation[0]] ?? MOTIVATION_ENERGY["espionage"]
+  const countryAccent = country && country !== "Unknown"
+    ? `, with the ${country} national flag colours and insignia incorporated into its armour or body,`
     : ""
 
-  const toolDesc =
-    tools.length > 0
-      ? `associated with tools like ${tools.slice(0, 3).join(", ")}, `
-      : ""
-
-  const rarityStyle = RARITY_STYLE[rarity] ?? RARITY_STYLE["RARE"]
-
-  const figureDesc =
-    `shadowy hacker figure representing a ${sophDesc}, ` +
-    `engaged in ${motivDesc}`
-
   return (
-    `${baseStyle}. ` +
-    `${figureDesc}${countryAesthetic}` +
-    `${toolDesc}` +
-    `${rarityStyle}. ` +
-    `Card title area reserved at top reading '${name}'. ` +
-    `Cinematic composition, portrait orientation, ultra-detailed, ` +
-    `digital art, trending on artstation.`
+    `Pokédex-style trading card creature illustration. ` +
+    `${creature}, ${energyDesc}${countryAccent} ${rarityGlow}. ` +
+    `Dark navy blue (#00123F) background with glowing circuit board patterns. ` +
+    `Futuristic cyber-punk hacker aesthetic. ` +
+    `Clean full-body character silhouette, vibrant neon colours, dramatic lighting, ` +
+    `ultra-detailed digital art, portrait orientation, trading card format.`
   )
 }
 
