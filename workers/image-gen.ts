@@ -1,35 +1,27 @@
 /**
  * AI hero image generation worker.
  *
- * Feature-flagged: skips gracefully if OPENAI_API_KEY is not set.
- * Uses OpenAI DALL-E 3 to generate card hero images for ThreatDex threat actors.
+ * Uses Stable Horde (https://stablehorde.net) — a volunteer-powered, free image
+ * generation network. No API key required; set STABLE_HORDE_API_KEY in .env for
+ * higher priority (free to register at stablehorde.net).
  *
  * Each actor gets a unique cyberpunk-style hero image derived from their
  * intelligence profile (country, sophistication, motivation, tools, etc.).
  *
  * Usage:
- *   OPENAI_API_KEY=<key> npx tsx workers/image-gen.ts [actor_id]
- *   OPENAI_API_KEY=<key> npx tsx workers/image-gen.ts   # processes all actors missing images
+ *   npx tsx workers/image-gen.ts [actor_id]
+ *   npx tsx workers/image-gen.ts   # processes all actors missing images
  */
 
 import { supabase, logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
 
 // ---------------------------------------------------------------------------
-// Feature flag
-// ---------------------------------------------------------------------------
-
-const HF_API_KEY = process.env.HF_API_KEY
-if (!HF_API_KEY) {
-  console.log("HF_API_KEY not set — skipping image generation")
-  process.exit(0)
-}
-
-// ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-const HF_MODEL = "black-forest-labs/FLUX.1-schnell"
-const HF_API_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}`
+const HORDE_API_URL = "https://stablehorde.net/api/v2"
+// Anonymous key works for 512×512 images; register at stablehorde.net for priority
+const HORDE_API_KEY = process.env.STABLE_HORDE_API_KEY ?? "0000000000"
 const STORAGE_BUCKET = "actor-images"
 
 // ---------------------------------------------------------------------------
@@ -136,16 +128,114 @@ export function buildImagePrompt(actor: Record<string, any>): string {
   return (
     `Pokédex-style trading card creature illustration. ` +
     `${creature}, ${energyDesc}${countryAccent} ${rarityGlow}. ` +
-    `Dark navy blue (#00123F) background with glowing circuit board patterns. ` +
+    `Dark navy blue background with glowing circuit board patterns. ` +
     `Futuristic cyber-punk hacker aesthetic. ` +
     `Clean full-body character silhouette, vibrant neon colours, dramatic lighting, ` +
-    `ultra-detailed digital art, portrait orientation, trading card format.`
+    `ultra-detailed digital art, trading card format.`
   )
 }
 
 // ---------------------------------------------------------------------------
 // Core generation function
 // ---------------------------------------------------------------------------
+
+async function generateWithHorde(prompt: string): Promise<Buffer | null> {
+  // Submit generation request
+  const submitResp = await fetch(`${HORDE_API_URL}/generate/async`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": HORDE_API_KEY,
+    },
+    body: JSON.stringify({
+      prompt,
+      params: {
+        width: 512,
+        height: 512,
+        steps: 20,
+        cfg_scale: 7,
+        sampler_name: "k_euler_a",
+      },
+      models: ["stable_diffusion"],
+      r2: false,
+    }),
+    signal: AbortSignal.timeout(30_000),
+  })
+
+  if (!submitResp.ok) {
+    const body = await submitResp.text()
+    console.error(`Horde submission failed ${submitResp.status}: ${body}`)
+    return null
+  }
+
+  const submit = (await submitResp.json()) as { id?: string; message?: string; warnings?: { message: string }[] }
+
+  if (!submit.id) {
+    console.error(`Horde did not return a job ID:`, submit.message ?? submit)
+    return null
+  }
+
+  if (submit.warnings?.length) {
+    console.log(`  Horde warnings: ${submit.warnings.map(w => w.message).join("; ")}`)
+  }
+
+  const jobId = submit.id
+  const maxWait = 3 * 60 * 1000 // 3 minutes
+  const pollInterval = 5_000
+  const startTime = Date.now()
+
+  while (Date.now() - startTime < maxWait) {
+    await new Promise((r) => setTimeout(r, pollInterval))
+
+    const checkResp = await fetch(`${HORDE_API_URL}/generate/check/${jobId}`, {
+      headers: { "apikey": HORDE_API_KEY },
+      signal: AbortSignal.timeout(15_000),
+    })
+
+    if (!checkResp.ok) continue
+
+    const check = (await checkResp.json()) as {
+      done: boolean
+      faulted: boolean
+      wait_time: number
+    }
+
+    if (check.faulted) {
+      console.error(`  Horde generation faulted for job ${jobId}`)
+      return null
+    }
+
+    if (!check.done) {
+      console.log(`  Waiting... ~${check.wait_time}s remaining`)
+      continue
+    }
+
+    const resultResp = await fetch(`${HORDE_API_URL}/generate/status/${jobId}`, {
+      headers: { "apikey": HORDE_API_KEY },
+      signal: AbortSignal.timeout(30_000),
+    })
+
+    if (!resultResp.ok) {
+      console.error(`  Failed to fetch result for job ${jobId}: ${resultResp.status}`)
+      return null
+    }
+
+    const result = (await resultResp.json()) as {
+      generations?: { img: string; censored?: boolean }[]
+    }
+
+    const b64 = result.generations?.[0]?.img
+    if (!b64) {
+      console.error(`  No image data in result for job ${jobId}`)
+      return null
+    }
+
+    return Buffer.from(b64, "base64")
+  }
+
+  console.error(`  Horde generation timed out for job ${jobId}`)
+  return null
+}
 
 export async function generateImageForActor(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,45 +244,12 @@ export async function generateImageForActor(
   const actorId: string = (actor["id"] as string | undefined) ?? "unknown"
   const prompt = buildImagePrompt(actor)
 
-  console.log(
-    `Generating image for actor ${actorId} (prompt: ${prompt.length} chars)`
-  )
+  console.log(`Generating image for actor ${actorId}`)
 
   try {
-    // Call Hugging Face Inference API — may return 503 while model loads, retry once
-    let response = await fetch(HF_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ inputs: prompt }),
-      signal: AbortSignal.timeout(120_000),
-    })
+    const imageBuffer = await generateWithHorde(prompt)
+    if (!imageBuffer) return null
 
-    if (response.status === 503) {
-      const { estimated_time } = (await response.json()) as { estimated_time?: number }
-      const waitMs = Math.min((estimated_time ?? 20) * 1000, 30_000)
-      console.log(`Model loading, retrying in ${waitMs / 1000}s...`)
-      await new Promise((r) => setTimeout(r, waitMs))
-      response = await fetch(HF_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: prompt }),
-        signal: AbortSignal.timeout(120_000),
-      })
-    }
-
-    if (!response.ok) {
-      const body = await response.text()
-      console.error(`HF API error ${response.status} for actor ${actorId}: ${body}`)
-      return null
-    }
-
-    const imageBuffer = Buffer.from(await response.arrayBuffer())
     const filePath = `${actorId}.png`
 
     const { error: uploadError } = await supabase.storage

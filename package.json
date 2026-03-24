@@ -13,11 +13,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "workers:mitre": "tsx workers/mitre-sync.ts",
-    "workers:etda": "tsx workers/etda-sync.ts",
-    "workers:otx": "tsx workers/otx-sync.ts",
-    "workers:image": "tsx workers/image-gen.ts",
-    "workers:all": "pnpm workers:mitre && pnpm workers:etda && pnpm workers:otx"
+    "workers:mitre": "node --env-file=.env --import tsx workers/mitre-sync.ts",
+    "workers:etda": "node --env-file=.env --import tsx workers/etda-sync.ts",
+    "workers:otx": "node --env-file=.env --import tsx workers/otx-sync.ts",
+    "workers:image": "node --env-file=.env --import tsx workers/image-gen.ts",
+    "workers:all": "npm run workers:mitre && npm run workers:etda && npm run workers:otx"
   },
   "dependencies": {
     "@react-router/node": "^7.0.0",
