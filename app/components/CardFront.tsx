@@ -561,18 +561,20 @@ export function CardFront({
             }}
           >
             <div>
-              <div
-                style={{
-                  fontFamily: "JetBrains Mono, monospace",
-                  fontSize: compact ? "10px" : "11px",
-                  color: "var(--text-muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em",
-                  marginBottom: "6px",
-                }}
-              >
-                Sophistication
-              </div>
+              {!compact && (
+                <div
+                  style={{
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.14em",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Sophistication
+                </div>
+              )}
               <SophisticationPips
                 score={sophScore}
                 size={compact ? "compact" : "expanded"}
@@ -591,21 +593,13 @@ export function CardFront({
           </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: compact ? "8px" : "10px",
-          }}
-        >
-          {motivations.map((motivation) => (
-            <MotivationChip
-              key={motivation}
-              motivation={motivation}
-              compact={compact}
-            />
-          ))}
-        </div>
+        {!compact && motivations.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+            {motivations.map((motivation) => (
+              <MotivationChip key={motivation} motivation={motivation} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
