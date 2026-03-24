@@ -134,18 +134,18 @@ function sortActors(
           new Date(String(a.last_updated ?? 0)).getTime()
         )
       case "recent_desc": {
-        const entityDelta = actorEntityScore(b) - actorEntityScore(a)
-        if (entityDelta !== 0) return entityDelta
+        // Primary: most recent activity year (last_seen, falling back to first_seen)
+        const recencyYear = (row: Record<string, unknown>) =>
+          String(row.last_seen ?? row.first_seen ?? "")
+        const aYear = recencyYear(a)
+        const bYear = recencyYear(b)
+        // Rows with no year sink to the bottom
+        if (aYear && !bYear) return -1
+        if (!aYear && bYear) return 1
+        const yearCompare = bYear.localeCompare(aYear)
+        if (yearCompare !== 0) return yearCompare
 
-        const lastSeenCompare = String(b.last_seen ?? "").localeCompare(
-          String(a.last_seen ?? ""),
-        )
-        if (lastSeenCompare !== 0) return lastSeenCompare
-
-        const threatDelta =
-          Number(b.threat_level ?? 0) - Number(a.threat_level ?? 0)
-        if (threatDelta !== 0) return threatDelta
-
+        // Tiebreak: last_updated timestamp
         return (
           new Date(String(b.last_updated ?? 0)).getTime() -
           new Date(String(a.last_updated ?? 0)).getTime()

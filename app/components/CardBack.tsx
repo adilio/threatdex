@@ -148,7 +148,13 @@ export function CardBack({
   const isPanel = variant === "panel"
   const compact = variant === "compact"
   const ttps = compact ? actor.ttps.slice(0, 4) : actor.ttps
-  const campaigns = compact ? actor.campaigns.slice(0, 2) : actor.campaigns
+  const sortedCampaigns = [...actor.campaigns].sort((a, b) => {
+    if (!a.year && !b.year) return 0
+    if (!a.year) return 1
+    if (!b.year) return -1
+    return b.year.localeCompare(a.year)
+  })
+  const campaigns = compact ? sortedCampaigns.slice(0, 2) : sortedCampaigns
   const tools = compact ? actor.tools.slice(0, 6) : actor.tools
   const regions = compact ? actor.geographies.slice(0, 6) : actor.geographies
   const sources = Array.from(new Set(actor.sources.map((source) => source.source)))
