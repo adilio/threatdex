@@ -6,6 +6,7 @@
 [![Data: TLP:WHITE](https://img.shields.io/badge/Data-TLP%3AWHITE-white.svg)](https://www.cisa.gov/tlp)
 [![Sources: MITRE ATT&CK](https://img.shields.io/badge/Source-MITRE%20ATT%26CK-red.svg)](https://attack.mitre.org)
 [![Sources: ETDA](https://img.shields.io/badge/Source-ETDA-orange.svg)](https://apt.etda.or.th)
+[![Sources: AlienVault OTX](https://img.shields.io/badge/Source-AlienVault%20OTX-green.svg)](https://otx.alienvault.com)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 ThreatDex turns dry APT intelligence into interactive trading cards — making threat actor research faster, more visual, and actually kind of fun. Browse, filter, and collect intelligence on the world's most dangerous cyber threat actors, sourced nightly from MITRE ATT&CK, ETDA, AlienVault OTX, and more.
