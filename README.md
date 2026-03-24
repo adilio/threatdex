@@ -26,13 +26,13 @@ ThreatDex turns dry APT intelligence into interactive trading cards — making t
 
 ## 🗂️ Data Sources
 
-| Source                                           | Type            | Entities                          | Update Frequency |
-|--------------------------------------------------|-----------------|-----------------------------------|------------------|
-| [MITRE ATT&CK](https://attack.mitre.org)         | STIX bundle     | Groups, TTPs, Software, Campaigns | Nightly          |
-| [ETDA Threat Group Cards](https://apt.etda.or.th)| Scraper         | Aliases, Origins, Operations      | Nightly          |
-| [AlienVault OTX](https://otx.alienvault.com)     | REST API        | IOCs, Pulses, Campaigns           | Nightly          |
-| [MISP](https://www.misp-project.org)             | REST API        | Threat Actors, Attributes         | On demand        |
-| [OpenCTI](https://www.opencti.io)                | GraphQL API     | Actors, Relations, TTPs           | On demand        |
+| Source                                           | Type            | Entities                          | Update Frequency | Status    |
+|--------------------------------------------------|-----------------|-----------------------------------|------------------|-----------|
+| [MITRE ATT&CK](https://attack.mitre.org)         | STIX bundle     | Groups, TTPs, Software, Campaigns | Nightly          | ✅ Live   |
+| [ETDA Threat Group Cards](https://apt.etda.or.th)| Scraper         | Aliases, Origins, Operations      | Nightly          | ✅ Live   |
+| [AlienVault OTX](https://otx.alienvault.com)     | REST API        | IOCs, Pulses, Campaigns           | Nightly          | ✅ Live   |
+| [MISP](https://www.misp-project.org)             | REST API        | Threat Actors, Attributes         | On demand        | 🔜 Planned |
+| [OpenCTI](https://www.opencti.io)                | GraphQL API     | Actors, Relations, TTPs           | On demand        | 🔜 Planned |
 
 All data is **TLP:WHITE**. Attribution is approximate and for educational purposes only.
 
@@ -66,10 +66,10 @@ pnpm dev
 open http://localhost:5173
 ```
 
-Apply the database schema by running the migrations in `supabase/migrations/` against your Supabase project, or use the Supabase CLI:
+Apply the database schema by running `db/schema.sql` against your Supabase project via the SQL editor, or with psql:
 
 ```bash
-supabase db push
+psql $DATABASE_URL -f db/schema.sql
 ```
 
 ### Seed with real data
@@ -107,8 +107,8 @@ threatdex/
 │   ├── otx-sync.ts    # AlienVault OTX connector
 │   ├── image-gen.ts   # AI hero image generation
 │   └── shared/        # Shared utilities (dedup, rarity, models, Supabase client)
-├── supabase/
-│   └── migrations/    # PostgreSQL schema + RLS policies
+├── db/
+│   └── schema.sql     # PostgreSQL schema, RLS policies, and seed data
 ├── tests/             # Vitest unit tests + Playwright e2e tests
 └── docs/              # Architecture, API reference, data sources
 ```
