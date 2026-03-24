@@ -307,15 +307,13 @@ a {
   overflow: hidden;
 }
 
-.dex-modal-card-col {
-  width: 290px;
+.dex-modal-image-col {
+  width: 340px;
   flex-shrink: 0;
-  padding: 1.25rem;
-  border-right: 1px solid var(--border-primary);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  position: relative;
   overflow: hidden;
+  border-right: 1px solid var(--border-primary);
+  background: #00123F;
 }
 
 .dex-modal-intel-col {
@@ -331,11 +329,11 @@ a {
     overflow-y: auto;
   }
 
-  .dex-modal-card-col {
+  .dex-modal-image-col {
     width: 100%;
+    height: 260px;
     border-right: none;
     border-bottom: 1px solid var(--border-primary);
-    padding-bottom: 1.25rem;
   }
 
   .dex-modal-intel-col {
