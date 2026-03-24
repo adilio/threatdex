@@ -236,17 +236,19 @@ async function main(): Promise<void> {
       }
       actors = [data as Record<string, unknown>]
     } else {
-      // Batch mode: process all actors without an image
+      // Batch mode: top 20 by threat level that are still missing an image
       const { data, error } = await supabase
         .from("actors")
         .select("*")
         .is("image_url", null)
+        .order("threat_level", { ascending: false })
+        .limit(20)
 
       if (error) {
         throw new Error(`Failed to fetch actors: ${error.message}`)
       }
       actors = (data ?? []) as Record<string, unknown>[]
-      console.log(`Found ${actors.length} actors without images`)
+      console.log(`Found ${actors.length} actors without images (top 20 by threat level)`)
     }
 
     for (const actor of actors) {
