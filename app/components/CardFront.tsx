@@ -250,36 +250,65 @@ function SophisticationPips({
   )
 }
 
-function AssetStatusBadge({
-  actor,
+function AliasTags({
+  aliases,
+  total,
   compact,
 }: {
-  actor: ThreatActor
+  aliases: string[]
+  total: number
   compact: boolean
 }) {
-  const hasGenerated = Boolean(actor.imageUrl)
-
   return (
-    <span
+    <div
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        borderRadius: "999px",
-        border: "1px solid rgba(2,84,236,0.14)",
-        background: hasGenerated
-          ? "rgba(2,84,236,0.12)"
-          : "rgba(255,191,255,0.18)",
-        color: "var(--text-primary)",
-        fontFamily: "JetBrains Mono, monospace",
-        fontSize: compact ? "9px" : "10px",
-        fontWeight: 700,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
-        padding: compact ? "4px 8px" : "6px 10px",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: compact ? "5px" : "6px",
+        marginTop: compact ? "8px" : "12px",
       }}
     >
-      {hasGenerated ? "Generated Art" : "Dex Portrait"}
-    </span>
+      {aliases.map((alias) => (
+        <span
+          key={alias}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            borderRadius: "6px",
+            border: "1px solid rgba(97,151,255,0.22)",
+            background: "rgba(97,151,255,0.10)",
+            color: "#6197FF",
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: compact ? "9px" : "10px",
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            padding: compact ? "3px 7px" : "4px 9px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {alias}
+        </span>
+      ))}
+      {total > aliases.length && (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            borderRadius: "6px",
+            border: "1px solid rgba(97,151,255,0.14)",
+            background: "rgba(97,151,255,0.06)",
+            color: "var(--text-muted)",
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: compact ? "9px" : "10px",
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            padding: compact ? "3px 7px" : "4px 9px",
+          }}
+        >
+          +{total - aliases.length}
+        </span>
+      )}
+    </div>
   )
 }
 
@@ -290,7 +319,7 @@ export function CardFront({
 }: CardFrontProps) {
   const rarityBorder = getRarityBorderStyle(actor.rarity)
   const sophScore = getSophisticationScore(actor.sophistication)
-  const aliases = actor.aliases.slice(0, variant === "expanded" ? 4 : 2)
+  const aliases = actor.aliases.slice(0, variant === "expanded" ? 8 : 4)
   const motivations = actor.motivation.slice(0, variant === "expanded" ? 4 : 2)
   const activeWindow =
     actor.firstSeen && actor.lastSeen
@@ -327,44 +356,18 @@ export function CardFront({
           gap: "12px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: compact ? "8px" : "10px" }}>
-          <span
-            style={{
-              fontFamily: "JetBrains Mono, monospace",
-              fontSize: compact ? "11px" : "12px",
-              color: "var(--text-muted)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-            }}
-          >
-            {actor.mitreId ?? actor.id.toUpperCase()}
-          </span>
-          <AssetStatusBadge actor={actor} compact={compact} />
-        </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <span
-            style={{
-              fontFamily: "JetBrains Mono, monospace",
-              fontSize: compact ? "10px" : "11px",
-              background:
-                actor.tlp === "GREEN"
-                  ? "rgba(0,200,83,0.16)"
-                  : "rgba(2,84,236,0.1)",
-              color: actor.tlp === "GREEN" ? "#007a3d" : "var(--text-primary)",
-              border: `1px solid ${
-                actor.tlp === "GREEN"
-                  ? "rgba(0,122,61,0.2)"
-                  : "rgba(2,84,236,0.14)"
-              }`,
-              borderRadius: "999px",
-              padding: compact ? "4px 8px" : "6px 10px",
-              letterSpacing: "0.08em",
-            }}
-          >
-            TLP:{actor.tlp}
-          </span>
-          <RarityBadge rarity={actor.rarity} size={compact ? "sm" : "md"} />
-        </div>
+        <span
+          style={{
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: compact ? "11px" : "12px",
+            color: "var(--text-muted)",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          {actor.mitreId ?? actor.id.toUpperCase()}
+        </span>
+        <RarityBadge rarity={actor.rarity} size={compact ? "sm" : "md"} />
       </div>
 
       <div
@@ -470,22 +473,7 @@ export function CardFront({
             </div>
           </div>
           {aliases.length > 0 && (
-            <p
-              style={{
-                margin: compact ? "10px 0 0" : "14px 0 0",
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: compact ? "11px" : "12px",
-                color: "var(--text-muted)",
-                letterSpacing: "0.03em",
-                overflowWrap: "anywhere",
-                wordBreak: "break-word",
-              }}
-            >
-              aka {aliases.join(" - ")}
-              {actor.aliases.length > aliases.length
-                ? ` +${actor.aliases.length - aliases.length}`
-                : ""}
-            </p>
+            <AliasTags aliases={aliases} total={actor.aliases.length} compact={compact} />
           )}
         </div>
 
