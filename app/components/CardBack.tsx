@@ -9,6 +9,13 @@ interface CardBackProps {
   variant?: "compact" | "expanded" | "panel"
 }
 
+function stripCitations(text: string): string {
+  return text
+    .replace(/\s*\(Citation:[^)]+\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 function renderRichText(text: string) {
   const tokenRegex =
     /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*]+)\*|_([^_]+)_/g
@@ -85,25 +92,36 @@ function SectionHeader({ title }: { title: string }) {
   )
 }
 
-function ListChip({
+function Chip({
   text,
   compact = false,
+  variant = "default",
 }: {
   text: string
   compact?: boolean
+  variant?: "default" | "tool" | "ttp" | "target"
 }) {
+  const styles = {
+    default: { bg: "rgba(2,84,236,0.08)", border: "rgba(2,84,236,0.14)", color: "var(--text-primary)" },
+    tool:    { bg: "rgba(151,139,255,0.12)", border: "rgba(151,139,255,0.28)", color: "#978BFF" },
+    ttp:     { bg: "rgba(2,84,236,0.07)", border: "rgba(2,84,236,0.16)", color: "var(--text-primary)" },
+    target:  { bg: "rgba(97,151,255,0.10)", border: "rgba(97,151,255,0.22)", color: "#6197FF" },
+  }[variant]
+
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        borderRadius: "999px",
-        border: "1px solid rgba(2,84,236,0.14)",
-        background: "rgba(2,84,236,0.08)",
-        color: "var(--text-primary)",
+        borderRadius: "6px",
+        border: `1px solid ${styles.border}`,
+        background: styles.bg,
+        color: styles.color,
         fontFamily: "JetBrains Mono, monospace",
         fontSize: compact ? "10px" : "11px",
-        padding: compact ? "5px 9px" : "7px 11px",
+        fontWeight: variant === "tool" ? 600 : 400,
+        padding: compact ? "4px 8px" : "6px 10px",
+        whiteSpace: "nowrap",
       }}
     >
       {text}
@@ -147,7 +165,12 @@ export function CardBack({
 }: CardBackProps) {
   const isPanel = variant === "panel"
   const compact = variant === "compact"
-  const ttps = compact ? actor.ttps.slice(0, 4) : actor.ttps
+  const allTtps = compact ? actor.ttps.slice(0, 8) : actor.ttps
+  const ttpsByTactic = allTtps.reduce<Record<string, typeof actor.ttps>>((acc, ttp) => {
+    const tactic = ttp.tactic || "Other"
+    ;(acc[tactic] ??= []).push(ttp)
+    return acc
+  }, {})
   const sortedCampaigns = [...actor.campaigns].sort((a, b) => {
     if (!a.year && !b.year) return 0
     if (!a.year) return 1
@@ -155,8 +178,10 @@ export function CardBack({
     return b.year.localeCompare(a.year)
   })
   const campaigns = compact ? sortedCampaigns.slice(0, 2) : sortedCampaigns
-  const tools = compact ? actor.tools.slice(0, 6) : actor.tools
+  const tools = compact ? actor.tools.slice(0, 8) : actor.tools
   const regions = compact ? actor.geographies.slice(0, 6) : actor.geographies
+  const sectors = compact ? actor.sectors.slice(0, 6) : actor.sectors
+  const aliases = compact ? actor.aliases.slice(0, 6) : actor.aliases
   const sources = Array.from(new Set(actor.sources.map((source) => source.source)))
   const rarityColor = getRarityColor(actor.rarity)
 
@@ -166,6 +191,52 @@ export function CardBack({
 
   const contentSections = (
     <>
+      {/* Aliases — shown at top in panel mode; card mode has aliases in the header */}
+      {isPanel && aliases.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {aliases.map((alias) => (
+            <span
+              key={alias}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                borderRadius: "6px",
+                border: "1px solid rgba(97,151,255,0.22)",
+                background: "rgba(97,151,255,0.10)",
+                color: "#6197FF",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "11px",
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                padding: "4px 9px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {alias}
+            </span>
+          ))}
+          {actor.aliases.length > aliases.length && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                borderRadius: "6px",
+                border: "1px solid rgba(97,151,255,0.14)",
+                background: "rgba(97,151,255,0.06)",
+                color: "var(--text-muted)",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "11px",
+                fontWeight: 600,
+                padding: "4px 9px",
+              }}
+            >
+              +{actor.aliases.length - aliases.length}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Profile */}
       <div
         style={{
           borderRadius,
@@ -185,10 +256,11 @@ export function CardBack({
             wordBreak: "break-word",
           }}
         >
-          {renderRichText(actor.description)}
+          {renderRichText(stripCitations(actor.description))}
         </p>
       </div>
 
+      {/* Tools & Targets */}
       <div
         style={{
           display: "grid",
@@ -200,19 +272,19 @@ export function CardBack({
           style={{
             borderRadius,
             background: "var(--card-panel)",
-            border: "1px solid rgba(2,84,236,0.12)",
+            border: "1px solid rgba(151,139,255,0.18)",
             padding: sectionPad,
           }}
         >
           <SectionHeader title="Tools" />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
             {tools.length > 0 ? (
               tools.map((tool) => (
-                <ListChip key={tool} text={tool} compact={compact} />
+                <Chip key={tool} text={tool} compact={compact} variant="tool" />
               ))
             ) : (
               <span style={{ color: "var(--text-muted)", fontSize: fontSize.label }}>
-                No tools listed
+                None listed
               </span>
             )}
           </div>
@@ -222,25 +294,31 @@ export function CardBack({
           style={{
             borderRadius,
             background: "var(--card-panel)",
-            border: "1px solid rgba(2,84,236,0.12)",
+            border: "1px solid rgba(97,151,255,0.18)",
             padding: sectionPad,
           }}
         >
           <SectionHeader title="Targets" />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {regions.length > 0 ? (
-              regions.map((region) => (
-                <ListChip key={region} text={region} compact={compact} />
-              ))
-            ) : (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {regions.length === 0 && sectors.length === 0 ? (
               <span style={{ color: "var(--text-muted)", fontSize: fontSize.label }}>
-                No regions listed
+                None listed
               </span>
+            ) : (
+              <>
+                {regions.map((r) => (
+                  <Chip key={r} text={r} compact={compact} variant="target" />
+                ))}
+                {sectors.map((s) => (
+                  <Chip key={s} text={s} compact={compact} variant="default" />
+                ))}
+              </>
             )}
           </div>
         </div>
       </div>
 
+      {/* ATT&CK Techniques grouped by tactic */}
       <div
         style={{
           borderRadius,
@@ -250,23 +328,44 @@ export function CardBack({
         }}
       >
         <SectionHeader title="ATT&CK Techniques" />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-          {ttps.length > 0 ? (
-            ttps.map((ttp) => (
-              <ListChip
-                key={`${ttp.techniqueId}-${ttp.techniqueName}`}
-                text={`${ttp.techniqueId} ${ttp.techniqueName}`}
-                compact={compact}
-              />
-            ))
-          ) : (
-            <span style={{ color: "var(--text-muted)", fontSize: fontSize.label }}>
-              No ATT&CK techniques listed
-            </span>
-          )}
-        </div>
+        {allTtps.length > 0 ? (
+          <div style={{ display: "grid", gap: compact ? "10px" : "14px" }}>
+            {Object.entries(ttpsByTactic).map(([tactic, ttps]) => (
+              <div key={tactic}>
+                <div
+                  style={{
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: "9px",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.16em",
+                    fontWeight: 700,
+                    marginBottom: "6px",
+                  }}
+                >
+                  {tactic}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {ttps.map((ttp) => (
+                    <Chip
+                      key={`${ttp.techniqueId}-${ttp.techniqueName}`}
+                      text={`${ttp.techniqueId} · ${ttp.techniqueName}`}
+                      compact={compact}
+                      variant="ttp"
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <span style={{ color: "var(--text-muted)", fontSize: fontSize.label }}>
+            No ATT&CK techniques listed
+          </span>
+        )}
       </div>
 
+      {/* Campaigns */}
       <div
         style={{
           borderRadius,
@@ -282,7 +381,7 @@ export function CardBack({
               <div
                 key={campaign.name}
                 style={{
-                  borderRadius: compact ? "14px" : "18px",
+                  borderRadius: compact ? "10px" : "14px",
                   padding: compact ? "10px 12px" : "14px 16px",
                   background: "rgba(2,84,236,0.06)",
                   border: "1px solid rgba(2,84,236,0.1)",
@@ -305,6 +404,7 @@ export function CardBack({
                         fontFamily: "JetBrains Mono, monospace",
                         fontSize: fontSize.chip,
                         color: "var(--text-muted)",
+                        flexShrink: 0,
                       }}
                     >
                       {campaign.year}
@@ -321,7 +421,7 @@ export function CardBack({
                     wordBreak: "break-word",
                   }}
                 >
-                  {renderRichText(campaign.description)}
+                  {renderRichText(stripCitations(campaign.description))}
                 </p>
               </div>
             ))
@@ -388,7 +488,7 @@ export function CardBack({
             gap: "12px",
           }}
         >
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <p
               style={{
                 margin: 0,
@@ -413,6 +513,49 @@ export function CardBack({
             >
               {actor.canonicalName}
             </h3>
+            {aliases.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "10px" }}>
+                {aliases.map((alias) => (
+                  <span
+                    key={alias}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      borderRadius: "6px",
+                      border: "1px solid rgba(97,151,255,0.22)",
+                      background: "rgba(97,151,255,0.10)",
+                      color: "#6197FF",
+                      fontFamily: "JetBrains Mono, monospace",
+                      fontSize: compact ? "9px" : "10px",
+                      fontWeight: 600,
+                      letterSpacing: "0.06em",
+                      padding: compact ? "3px 7px" : "4px 9px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {alias}
+                  </span>
+                ))}
+                {actor.aliases.length > aliases.length && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      borderRadius: "6px",
+                      border: "1px solid rgba(97,151,255,0.14)",
+                      background: "rgba(97,151,255,0.06)",
+                      color: "var(--text-muted)",
+                      fontFamily: "JetBrains Mono, monospace",
+                      fontSize: compact ? "9px" : "10px",
+                      fontWeight: 600,
+                      padding: compact ? "3px 7px" : "4px 9px",
+                    }}
+                  >
+                    +{actor.aliases.length - aliases.length}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div
             style={{
