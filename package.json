@@ -13,10 +13,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "workers:mitre": "node --env-file=.env --import tsx workers/mitre-sync.ts",
-    "workers:etda": "node --env-file=.env --import tsx workers/etda-sync.ts",
-    "workers:otx": "node --env-file=.env --import tsx workers/otx-sync.ts",
-    "workers:image": "node --env-file=.env --import tsx workers/image-gen.ts",
+    "workers:mitre": "node --env-file-if-exists=.env --import tsx workers/mitre-sync.ts",
+    "workers:etda": "node --env-file-if-exists=.env --import tsx workers/etda-sync.ts",
+    "workers:otx": "node --env-file-if-exists=.env --import tsx workers/otx-sync.ts",
+    "workers:image": "node --env-file-if-exists=.env --import tsx workers/image-gen.ts",
     "workers:all": "npm run workers:mitre && npm run workers:etda && npm run workers:otx"
   },
   "dependencies": {
