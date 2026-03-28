@@ -19,10 +19,15 @@ import { supabase, logSyncStart, logSyncComplete, logSyncError } from "./shared/
 // Configuration
 // ---------------------------------------------------------------------------
 
-const HORDE_API_URL = "https://stablehorde.net/api/v2"
-// Anonymous key works for 512×512 images; register at stablehorde.net for priority
-const HORDE_API_KEY = process.env.STABLE_HORDE_API_KEY ?? "0000000000"
+const HF_API_KEY = process.env.HF_API_KEY
+const HF_MODEL = "black-forest-labs/FLUX.1-schnell"
+const HF_API_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}`
 const STORAGE_BUCKET = "actor-images"
+
+if (!HF_API_KEY) {
+  console.error("HF_API_KEY not set — cannot generate images")
+  process.exit(1)
+}
 
 // ---------------------------------------------------------------------------
 // Prompt builder
@@ -139,102 +144,32 @@ export function buildImagePrompt(actor: Record<string, any>): string {
 // Core generation function
 // ---------------------------------------------------------------------------
 
-async function generateWithHorde(prompt: string): Promise<Buffer | null> {
-  // Submit generation request
-  const submitResp = await fetch(`${HORDE_API_URL}/generate/async`, {
+async function generateWithFlux(prompt: string): Promise<Buffer | null> {
+  const resp = await fetch(HF_API_URL, {
     method: "POST",
     headers: {
+      "Authorization": `Bearer ${HF_API_KEY}`,
       "Content-Type": "application/json",
-      "apikey": HORDE_API_KEY,
     },
-    body: JSON.stringify({
-      prompt,
-      params: {
-        width: 512,
-        height: 512,
-        steps: 20,
-        cfg_scale: 7,
-        sampler_name: "k_euler_a",
-      },
-      models: ["stable_diffusion"],
-      r2: false,
-    }),
-    signal: AbortSignal.timeout(30_000),
+    body: JSON.stringify({ inputs: prompt }),
+    signal: AbortSignal.timeout(120_000),
   })
 
-  if (!submitResp.ok) {
-    const body = await submitResp.text()
-    console.error(`Horde submission failed ${submitResp.status}: ${body}`)
+  if (resp.status === 503) {
+    // Model loading — retry once after a short wait
+    console.log("  Model loading, retrying in 20s...")
+    await new Promise((r) => setTimeout(r, 20_000))
+    return generateWithFlux(prompt)
+  }
+
+  if (!resp.ok) {
+    const body = await resp.text()
+    console.error(`HF request failed ${resp.status}: ${body}`)
     return null
   }
 
-  const submit = (await submitResp.json()) as { id?: string; message?: string; warnings?: { message: string }[] }
-
-  if (!submit.id) {
-    console.error(`Horde did not return a job ID:`, submit.message ?? submit)
-    return null
-  }
-
-  if (submit.warnings?.length) {
-    console.log(`  Horde warnings: ${submit.warnings.map(w => w.message).join("; ")}`)
-  }
-
-  const jobId = submit.id
-  const maxWait = 3 * 60 * 1000 // 3 minutes
-  const pollInterval = 5_000
-  const startTime = Date.now()
-
-  while (Date.now() - startTime < maxWait) {
-    await new Promise((r) => setTimeout(r, pollInterval))
-
-    const checkResp = await fetch(`${HORDE_API_URL}/generate/check/${jobId}`, {
-      headers: { "apikey": HORDE_API_KEY },
-      signal: AbortSignal.timeout(15_000),
-    })
-
-    if (!checkResp.ok) continue
-
-    const check = (await checkResp.json()) as {
-      done: boolean
-      faulted: boolean
-      wait_time: number
-    }
-
-    if (check.faulted) {
-      console.error(`  Horde generation faulted for job ${jobId}`)
-      return null
-    }
-
-    if (!check.done) {
-      console.log(`  Waiting... ~${check.wait_time}s remaining`)
-      continue
-    }
-
-    const resultResp = await fetch(`${HORDE_API_URL}/generate/status/${jobId}`, {
-      headers: { "apikey": HORDE_API_KEY },
-      signal: AbortSignal.timeout(30_000),
-    })
-
-    if (!resultResp.ok) {
-      console.error(`  Failed to fetch result for job ${jobId}: ${resultResp.status}`)
-      return null
-    }
-
-    const result = (await resultResp.json()) as {
-      generations?: { img: string; censored?: boolean }[]
-    }
-
-    const b64 = result.generations?.[0]?.img
-    if (!b64) {
-      console.error(`  No image data in result for job ${jobId}`)
-      return null
-    }
-
-    return Buffer.from(b64, "base64")
-  }
-
-  console.error(`  Horde generation timed out for job ${jobId}`)
-  return null
+  const arrayBuffer = await resp.arrayBuffer()
+  return Buffer.from(arrayBuffer)
 }
 
 export async function generateImageForActor(
@@ -247,7 +182,7 @@ export async function generateImageForActor(
   console.log(`Generating image for actor ${actorId}`)
 
   try {
-    const imageBuffer = await generateWithHorde(prompt)
+    const imageBuffer = await generateWithFlux(prompt)
     if (!imageBuffer) return null
 
     const filePath = `${actorId}.png`
