@@ -3,7 +3,7 @@
   publish = "build/client"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "24"
 
 # React Router SSR - Netlify will serve static files first
 [[redirects]]
