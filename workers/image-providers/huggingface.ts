@@ -8,12 +8,13 @@
  */
 
 import type { ImageProvider } from "./index.js"
+import { InferenceClient } from "@huggingface/inference"
 
 interface HuggingFaceOptions {
   model?: string
 }
 
-const DEFAULT_MODEL = "black-forest-labs/FLUX.1-dev"
+const DEFAULT_MODEL = process.env.HF_IMAGE_MODEL ?? "black-forest-labs/FLUX.1-dev"
 
 export function huggingFaceProvider(options: HuggingFaceOptions = {}): ImageProvider {
   const apiKey = process.env.HF_API_KEY
@@ -22,38 +23,26 @@ export function huggingFaceProvider(options: HuggingFaceOptions = {}): ImageProv
   }
 
   const model = options.model ?? DEFAULT_MODEL
+  const client = new InferenceClient(apiKey)
 
   return {
     name: `huggingface-${model.split("/")[1]}`,
     async generate(prompt: string): Promise<Buffer | null> {
       try {
-        const response = await fetch(
-          `https://api-inference.huggingface.co/models/${model}`,
+        const image = await client.textToImage(
           {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
+            model,
+            inputs: prompt,
+            provider: "auto",
+            parameters: {
+              num_inference_steps: 25,
+              guidance_scale: 7.5,
             },
-            body: JSON.stringify({
-              inputs: prompt,
-              parameters: {
-                num_inference_steps: 25,
-                guidance_scale: 7.5,
-              },
-            }),
-            signal: AbortSignal.timeout(120_000), // 2 minute timeout
-          }
+          },
+          { outputType: "blob" }
         )
 
-        if (!response.ok) {
-          const error = await response.text()
-          console.error("Hugging Face API error:", error)
-          return null
-        }
-
-        const buffer = Buffer.from(await response.arrayBuffer())
-        return buffer
+        return Buffer.from(await image.arrayBuffer())
       } catch (error) {
         console.error("Hugging Face image generation failed:", error)
         return null

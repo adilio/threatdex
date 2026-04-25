@@ -231,7 +231,9 @@ async function fetchActors(opts: CliOptions): Promise<Record<string, unknown>[]>
 // ----------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+  const args = process.argv[2] === "--" ? process.argv.slice(3) : process.argv.slice(2)
   const { values } = parseArgs({
+    args,
     options: {
       actor: { type: "string" },
       top: { type: "string" },
@@ -244,7 +246,15 @@ async function main(): Promise<void> {
     allowPositionals: true,
   })
 
-  const opts = values as unknown as CliOptions
+  const opts: CliOptions = {
+    actor: values.actor,
+    top: values.top,
+    limit: values.limit,
+    force: values.force,
+    dryRun: values["dry-run"],
+    provider: values.provider,
+    exclude: values.exclude,
+  }
 
   // Select provider
   let provider: ImageProvider
@@ -296,6 +306,13 @@ async function main(): Promise<void> {
       console.log(`${status}: ${count}`)
     }
   }
+
+  if (results.failed > 0) {
+    process.exitCode = 1
+  }
 }
 
-main().catch(console.error)
+main().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})

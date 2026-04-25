@@ -21,10 +21,7 @@ jobs:
     name: Generate hero images
     runs-on: ubuntu-latest
     env:
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       HF_API_KEY: ${{ secrets.HF_API_KEY }}
-      STABLE_HORDE_API_KEY: ${{ secrets.STABLE_HORDE_API_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v5
 
@@ -39,8 +36,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate images
-        if: env.GEMINI_API_KEY != '' || env.HF_API_KEY != '' || env.STABLE_HORDE_API_KEY != '' || env.OPENAI_API_KEY != ''
-        run: pnpm workers:image -- --limit ${{ inputs.limit || '20' }} ${{ inputs.force && '--force' || '' }}
+        if: env.HF_API_KEY != ''
+        run: pnpm workers:image --provider huggingface --limit ${{ inputs.limit || '20' }} ${{ inputs.force && '--force' || '' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
