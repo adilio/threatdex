@@ -518,7 +518,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
                       {references.length > 0
-                        ? references.slice(0, 10).map((reference) => (
+                        ? references.slice(0, 3).map((reference) => (
                             <a
                               key={reference.url}
                               href={reference.url}
@@ -545,11 +545,6 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                             </a>
                           ))
                         : <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>No references listed</span>}
-                      {references.length > 10 && (
-                        <span style={{ color: "#6197FF", fontFamily: "monospace", fontSize: "10px", alignSelf: "center" }}>
-                          +{references.length - 10} more
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
