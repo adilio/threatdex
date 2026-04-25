@@ -40,7 +40,7 @@ export function openAiProvider(options: OpenAIOptions = {}): ImageProvider {
           response_format: "b64_json",
         })
 
-        const b64 = result.data[0]?.b64_json
+        const b64 = result.data?.[0]?.b64_json
         if (!b64) {
           console.error("OpenAI returned no image data")
           return null

@@ -108,7 +108,7 @@ function shouldSkip(actor: Record<string, unknown>, opts: CliOptions): boolean {
 
 async function processActor(
   actor: Record<string, unknown>,
-  provider: ReturnType<ReturnType<typeof selectProvider>>,
+  provider: ImageProvider,
   opts: CliOptions
 ): Promise<ProcessResult> {
   const actorId = String(actor.id ?? "unknown")

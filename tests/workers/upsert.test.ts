@@ -12,7 +12,7 @@ import { mergeActors } from "../../workers/shared/dedup"
 import type { ThreatActorData } from "../../workers/shared/models"
 
 // Mock supabase client
-const mockSupabase = {
+const mockSupabase: any = {
   from: vi.fn(() => mockSupabase),
   select: vi.fn(() => mockSupabase),
   eq: vi.fn(() => mockSupabase),
