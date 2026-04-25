@@ -1,7 +1,7 @@
 /**
  * Hugging Face Inference image provider.
  *
- * Models: stabilityai/stable-diffusion-xl-base-1.0 or black-forest-labs/FLUX.1-dev
+ * Models: black-forest-labs/FLUX.1-schnell by default, override with HF_IMAGE_MODEL.
  * Cost: Free tier available
  * Latency: 20-60s (queued)
  * Quality: Good with FLUX, mid with SDXL
@@ -14,7 +14,7 @@ interface HuggingFaceOptions {
   model?: string
 }
 
-const DEFAULT_MODEL = process.env.HF_IMAGE_MODEL ?? "black-forest-labs/FLUX.1-dev"
+const DEFAULT_MODEL = process.env.HF_IMAGE_MODEL ?? "black-forest-labs/FLUX.1-schnell"
 
 export function huggingFaceProvider(options: HuggingFaceOptions = {}): ImageProvider {
   const apiKey = process.env.HF_API_KEY
@@ -34,9 +34,9 @@ export function huggingFaceProvider(options: HuggingFaceOptions = {}): ImageProv
             model,
             inputs: prompt,
             provider: "auto",
-            parameters: {
-              num_inference_steps: 25,
-              guidance_scale: 7.5,
+          parameters: {
+              num_inference_steps: model.includes("schnell") ? 4 : 25,
+              guidance_scale: model.includes("schnell") ? 0 : 7.5,
             },
           },
           { outputType: "blob" }

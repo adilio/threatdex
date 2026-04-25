@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HF_API_KEY: ${{ secrets.HF_API_KEY }}
+      HF_IMAGE_MODEL: black-forest-labs/FLUX.1-schnell
     steps:
       - uses: actions/checkout@v5
 
