@@ -104,7 +104,7 @@ function ToolChip({ name }: { name: string }) {
         borderRadius: "3px",
         fontFamily: "monospace",
         fontSize: "8px",
-        color: "#978BFF",
+        color: "#97BBFF",
         padding: "2px 5px",
         whiteSpace: "nowrap",
       }}
@@ -122,7 +122,7 @@ const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
   mitre: { bg: "rgba(255,0,0,0.15)", text: "#FF6B6B" },
   etda: { bg: "rgba(97,151,255,0.15)", text: "#6197FF" },
   otx: { bg: "rgba(255,165,0,0.15)", text: "#FFA500" },
-  misp: { bg: "rgba(255,11,190,0.15)", text: "#FF0BBE" },
+  misp: { bg: "rgba(255,155,190,0.15)", text: "#FF9BBE" },
   opencti: { bg: "rgba(2,84,236,0.2)", text: "#0254EC" },
   manual: { bg: "rgba(255,191,255,0.1)", text: "#FFBFFF" },
 }
@@ -170,7 +170,7 @@ export function CardBack({ actor, className }: CardBackProps) {
         width: "280px",
         height: "392px",
         borderRadius: "12px",
-        background: "linear-gradient(160deg, #00123F 0%, #0a1a4a 100%)",
+        background: "linear-gradient(160deg, #01123F 0%, #0a1a4a 100%)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -185,7 +185,7 @@ export function CardBack({ actor, className }: CardBackProps) {
       {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          background: "linear-gradient(90deg, #00123F 0%, #173AAA 100%)",
+          background: "linear-gradient(90deg, #01123F 0%, #173AAA 100%)",
           padding: "6px 10px",
           display: "flex",
           flexDirection: "column",
@@ -238,11 +238,11 @@ export function CardBack({ actor, className }: CardBackProps) {
           <div>
             <SectionHeader title="Techniques & Tactics" icon="⚔" />
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-              {displayTTPs.map((ttp) => (
+              {displayTTPs.map((ttp, idx) => (
                 <TTPChip
-                  key={ttp.techniqueId}
-                  techniqueId={ttp.techniqueId}
-                  tactic={ttp.tactic}
+                  key={ttp.techniqueId || `ttp-${idx}`}
+                  techniqueId={ttp.techniqueId || "N/A"}
+                  tactic={ttp.tactic || "Unknown"}
                 />
               ))}
               {actor.ttps.length > 5 && (

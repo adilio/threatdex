@@ -35,14 +35,14 @@ function getRarityBorderStyle(rarity: Rarity): React.CSSProperties {
       }
     case "LEGENDARY":
       return {
-        border: "2px solid #FF0BBE",
+        border: "2px solid #FF9BBE",
         boxShadow:
-          "0 0 10px rgba(255,11,190,0.7), 0 0 24px rgba(255,11,190,0.25), inset 0 0 16px rgba(255,11,190,0.04)",
+          "0 0 10px rgba(255,155,190,0.7), 0 0 24px rgba(255,155,190,0.25), inset 0 0 16px rgba(255,155,190,0.04)",
       }
     case "EPIC":
       return {
-        border: "2px solid #978BFF",
-        boxShadow: "0 0 8px rgba(151,139,255,0.5), 0 0 20px rgba(151,139,255,0.2)",
+        border: "2px solid #97BBFF",
+        boxShadow: "0 0 8px rgba(151,187,255,0.5), 0 0 20px rgba(151,187,255,0.2)",
       }
     case "RARE":
     default:
@@ -73,11 +73,11 @@ function HeroPlaceholder({
 
   const gradientMap: Record<Rarity, string> = {
     MYTHIC:
-      "linear-gradient(135deg, #00123F 0%, #173AAA 40%, #FFFF00 100%)",
+      "linear-gradient(135deg, #01123F 0%, #173AAA 40%, #FFFF00 100%)",
     LEGENDARY:
-      "linear-gradient(135deg, #00123F 0%, #C64BA4 50%, #FF0BBE 100%)",
-    EPIC: "linear-gradient(135deg, #00123F 0%, #173AAA 55%, #978BFF 100%)",
-    RARE: "linear-gradient(135deg, #00123F 0%, #173AAA 60%, #6197FF 100%)",
+      "linear-gradient(135deg, #01123F 0%, #C56BA4 50%, #FF9BBE 100%)",
+    EPIC: "linear-gradient(135deg, #01123F 0%, #173AAA 55%, #97BBFF 100%)",
+    RARE: "linear-gradient(135deg, #01123F 0%, #173AAA 60%, #6197FF 100%)",
   }
 
   const countryFlag =
@@ -164,9 +164,9 @@ function HeroPlaceholder({
 const MOTIVATION_COLORS: Record<string, { bg: string; text: string }> = {
   espionage: { bg: "rgba(2,84,236,0.25)", text: "#6197FF" },
   financial: { bg: "rgba(255,255,0,0.15)", text: "#FFFF00" },
-  sabotage: { bg: "rgba(255,11,190,0.15)", text: "#FF0BBE" },
-  hacktivism: { bg: "rgba(151,139,255,0.2)", text: "#978BFF" },
-  military: { bg: "rgba(198,75,164,0.2)", text: "#FFBFD6" },
+  sabotage: { bg: "rgba(255,155,190,0.15)", text: "#FF9BBE" },
+  hacktivism: { bg: "rgba(151,187,255,0.2)", text: "#97BBFF" },
+  military: { bg: "rgba(197,107,164,0.2)", text: "#FFBFD6" },
 }
 
 function MotivationChip({ motivation }: { motivation: string }) {
@@ -217,8 +217,8 @@ function SophisticationPips({
             width: "6px",
             height: "6px",
             borderRadius: "50%",
-            backgroundColor: i < score ? "#978BFF" : "#173AAA",
-            boxShadow: i < score ? "0 0 4px #978BFF80" : undefined,
+            backgroundColor: i < score ? "#97BBFF" : "#173AAA",
+            boxShadow: i < score ? "0 0 4px #97BBFF80" : undefined,
           }}
         />
       ))}
@@ -261,7 +261,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
         maxWidth: "320px",
         aspectRatio: "280 / 392",
         borderRadius: "12px",
-        background: "linear-gradient(160deg, #00123F 0%, #0a1a4a 100%)",
+        background: "linear-gradient(160deg, #01123F 0%, #0a1a4a 100%)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -275,7 +275,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
       {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          background: "linear-gradient(90deg, #00123F 0%, #173AAA 100%)",
+          background: "linear-gradient(90deg, #01123F 0%, #173AAA 100%)",
           padding: "6px 10px",
           display: "flex",
           alignItems: "center",
@@ -382,7 +382,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
             left: 0,
             right: 0,
             height: "40px",
-            background: "linear-gradient(to top, #00123F, transparent)",
+            background: "linear-gradient(to top, #01123F, transparent)",
           }}
         />
       </div>
@@ -416,7 +416,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
             style={{
               fontFamily: "sans-serif",
               fontSize: "10px",
-              color: "#978BFF",
+              color: "#97BBFF",
               fontStyle: "italic",
               marginTop: "1px",
               overflow: "hidden",
@@ -441,7 +441,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
           >
             aka {displayAliases.join(" · ")}
             {actor.aliases.length > 3 && (
-              <span style={{ color: "#978BFF" }}>
+              <span style={{ color: "#97BBFF" }}>
                 {" "}+{actor.aliases.length - 3}
               </span>
             )}

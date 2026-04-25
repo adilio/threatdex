@@ -74,16 +74,17 @@ function TTPSection({ ttps }: { ttps: ThreatActor["ttps"] }) {
           <div key={tactic} className="bg-blue-shadow/20 border border-blue-shadow/40 rounded-lg p-4">
             <h3 className="text-sky-blue font-semibold text-sm uppercase tracking-wider mb-3">{tactic}</h3>
             <div className="flex flex-wrap gap-2">
-              {entries.map((ttp) => (
+              {entries.map((ttp, idx) => (
                 <a
-                  key={ttp.techniqueId}
-                  href={`https://attack.mitre.org/techniques/${ttp.techniqueId.replace(".", "/")}/`}
+                  key={ttp.techniqueId || `ttp-${idx}`}
+                  href={ttp.techniqueId ? `https://attack.mitre.org/techniques/${ttp.techniqueId.replace(".", "/")}/` : "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-serious-blue border border-sky-blue/30 rounded text-xs font-mono text-sky-blue hover:border-sky-blue hover:text-cloudy-white transition-colors"
+                  style={!ttp.techniqueId ? { opacity: 0.6, pointerEvents: "none" } : undefined}
                 >
-                  <span className="text-light-sky-blue">{ttp.techniqueId}</span>
-                  <span className="text-cloudy-white/60">{ttp.techniqueName}</span>
+                  <span className="text-light-sky-blue">{ttp.techniqueId || "N/A"}</span>
+                  <span className="text-cloudy-white/60">{ttp.techniqueName || "Unknown"}</span>
                 </a>
               ))}
             </div>
