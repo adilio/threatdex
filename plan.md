@@ -1,9 +1,79 @@
 # ThreatDex Improvement Plan
 
-**Status: Phase 0-5 Complete ✅ (Deployed)**
+**Status:** Phases 0-5 complete and deployed. Everything below the
+"Archived — original plan" divider is preserved for reference but no longer
+active work.
 
-Refreshed 2026-04-25 against live Supabase data (project `zxutysxzhsswkwphzplf`,
-673 actors, 167 sync runs since launch).
+**Live audit:** 2026-04-25 against Supabase project `zxutysxzhsswkwphzplf`
+(673 actors, 167 sync runs since launch) plus a UX walkthrough of
+`https://threatdex.netlify.app`.
+
+---
+
+## Open issues — discovered 2026-04-25 post-deploy review
+
+These were uncovered after Phase 5 shipped. They are not covered by the
+original phase plan.
+
+### O1. `/actors/:id` returns HTTP 500 in production
+
+`https://threatdex.netlify.app/actors/sandworm` (and presumably every other
+actor detail URL) errors out. The "View Details" link rendered on every card
+in the home grid is a dead link. **Highest priority** — it's a live broken
+flow on the deployed site.
+
+Files to investigate: `app/routes/actors.$id.tsx`, the loader and any RPC it
+calls. Check Netlify function logs for the SSR error.
+
+### O2. Card-back UX is information-poor by construction
+
+`CardBack.tsx` is hard-pinned to 280×392 px (lines 170-171) and consequently
+truncates everything: first 5 TTPs, 3 campaigns, 8 tools, 3 sectors, 3
+geographies, then `+N more` rollup counters (CardBack.tsx:159-163). At 7-9px
+monospace, even the visible items are barely scannable. So flipping the card
+shows the user a worse summary than the front, not a fuller view.
+
+**Intended UX (user request):** on flip, the card should expand to fill the
+viewport so the back becomes fully readable. Implementation sketch:
+
+- Animate the card into a centered modal at ~90vw / 90vh with a backdrop.
+- Keep the existing 3D `rotateY` animation in `ThreatActorCard.tsx:77-79` —
+  add scale + position transitions alongside it.
+- Render an expanded `CardBack` variant that drops the truncation and shows
+  full TTP list grouped by tactic, all campaigns with descriptions, full
+  tool/sector/geography lists, and source citations with URLs.
+- Dismiss on Esc, backdrop click, or a second click on the card.
+- Decide whether this fullscreen back replaces the `/actors/:id` detail page
+  or coexists. Both is redundant.
+
+### O3. Dead/duplicate card component
+
+`app/components/ActorCard.tsx` exists with a more elaborate flip + download +
+"View Details" UI, but nothing imports it. The home page renders
+`ThreatActorCard.tsx`. Pick one and delete the other before adding the
+fullscreen-flip work in O2.
+
+### O4. "Verified" filter is on by default and invisible
+
+`app/routes/_index.tsx:62` defaults `verified=true`, which hides any actor
+with fewer than 2 sources. The header reads "Showing 1–20 of 673 actors" but
+that 673 is the filtered total — users don't see the unfiltered count
+anywhere. Either show "filtered: X of Y" or default the toggle off.
+
+## Recommended order
+
+1. **Fix the `/actors/:id` 500** (O1) — smallest scope, breaking links live.
+2. **Build flip-to-fullscreen card back** (O2) — the largest piece of work.
+3. **Cleanup**: remove the dead `ActorCard.tsx` (O3), reconsider the verified
+   default (O4).
+
+---
+
+## Archived — original plan (Phases 0-5, all complete)
+
+Everything below was the active plan up to 2026-04-25. All phases are
+complete and deployed. Preserved for context on why the current code is
+shaped the way it is.
 
 This plan supersedes the prior version, which was based on static repo
 inspection and made several claims that the live data contradicts.

@@ -20,6 +20,8 @@ jobs:
   sync:
     name: Sync ${{ inputs.source || 'all' }}
     runs-on: ubuntu-latest
+    env:
+      OTX_API_KEY: ${{ secrets.OTX_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -50,17 +52,8 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
       - name: Sync OTX
-        if: (inputs.source == 'otx' || inputs.source == 'all' || github.event_name == 'schedule') && secrets.OTX_API_KEY != ''
+        if: (inputs.source == 'otx' || inputs.source == 'all' || github.event_name == 'schedule') && env.OTX_API_KEY != ''
         run: pnpm workers:otx
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          OTX_API_KEY: ${{ secrets.OTX_API_KEY }}
-
-      - name: Generate missing images
-        if: (inputs.source == 'all' || github.event_name == 'schedule') && secrets.GEMINI_API_KEY != ''
-        run: pnpm workers:image -- --limit 20
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
