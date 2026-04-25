@@ -313,6 +313,67 @@ function ActorImagePanel({ actor }: { actor: ThreatActor }) {
   )
 }
 
+type ReferenceLink = {
+  label: string
+  url: string
+}
+
+function cleanIntelText(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, "$1")
+    .replace(/\s*\(Citation:[^)]+\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function hostLabel(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "")
+    if (host === "attack.mitre.org") return "MITRE ATT&CK"
+    return host
+  } catch {
+    return "Reference"
+  }
+}
+
+function sourceLabel(source: ThreatActor["sources"][number]): string {
+  const name = source.source === "mitre" ? "MITRE ATT&CK" : source.source.toUpperCase()
+  return source.sourceId ? `${name} ${source.sourceId}` : name
+}
+
+function markdownReferences(text: string): ReferenceLink[] {
+  const links: ReferenceLink[] = []
+  const regex = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g
+  for (const match of text.matchAll(regex)) {
+    const label = match[1]?.trim()
+    const url = match[2]?.trim()
+    if (label && url) {
+      links.push({ label: `${hostLabel(url)}: ${label}`, url })
+    }
+  }
+  return links
+}
+
+function collectReferences(actor: ThreatActor): ReferenceLink[] {
+  const references = [
+    ...actor.sources
+      .filter((source) => source.url)
+      .map((source) => ({
+        label: sourceLabel(source),
+        url: source.url as string,
+      })),
+    ...markdownReferences(actor.description),
+    ...actor.campaigns.flatMap((campaign) => markdownReferences(campaign.description)),
+  ]
+
+  const seen = new Set<string>()
+  return references.filter((reference) => {
+    if (seen.has(reference.url)) return false
+    seen.add(reference.url)
+    return true
+  })
+}
+
 // ---------------------------------------------------------------------------
 // CardBack
 // ---------------------------------------------------------------------------
@@ -324,6 +385,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
   const displaySectors = expanded ? actor.sectors : actor.sectors.slice(0, 3)
   const displayGeos = expanded ? actor.geographies : actor.geographies.slice(0, 3)
   const uniqueSources = Array.from(new Set(actor.sources.map((s) => s.source)))
+  const references = collectReferences(actor)
   const ttpsByTactic = displayTTPs.reduce<Record<string, typeof displayTTPs>>((acc, ttp) => {
     const tactic = ttp.tactic || "Unknown"
     acc[tactic] = acc[tactic] ?? []
@@ -413,6 +475,87 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
             <ActorImagePanel actor={actor} />
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", minWidth: 0 }}>
               <section>
+                <SectionHeader title="AKA & References" icon="◎" />
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: "rgba(23,58,170,0.14)",
+                      border: "1px solid rgba(97,151,255,0.18)",
+                      borderRadius: "10px",
+                      padding: "12px",
+                    }}
+                  >
+                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
+                      Also Known As
+                    </div>
+                    <div style={{ color: "rgba(255,255,255,0.74)", fontSize: "12px", lineHeight: 1.55 }}>
+                      {actor.aliases.length > 0
+                        ? (
+                            <>
+                              {actor.aliases.slice(0, 12).join(", ")}
+                              {actor.aliases.length > 12 ? `, +${actor.aliases.length - 12} more` : ""}
+                            </>
+                          )
+                        : "No aliases listed"}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      background: "rgba(23,58,170,0.14)",
+                      border: "1px solid rgba(97,151,255,0.18)",
+                      borderRadius: "10px",
+                      padding: "12px",
+                    }}
+                  >
+                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
+                      References
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
+                      {references.length > 0
+                        ? references.slice(0, 10).map((reference) => (
+                            <a
+                              key={reference.url}
+                              href={reference.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(event) => event.stopPropagation()}
+                              style={{
+                                color: "#97BBFF",
+                                border: "1px solid rgba(151,187,255,0.3)",
+                                background: "rgba(151,187,255,0.1)",
+                                borderRadius: "999px",
+                                padding: "5px 9px",
+                                fontFamily: "monospace",
+                                fontSize: "10px",
+                                fontWeight: 800,
+                                textDecoration: "none",
+                                maxWidth: "100%",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {reference.label}
+                            </a>
+                          ))
+                        : <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>No references listed</span>}
+                      {references.length > 10 && (
+                        <span style={{ color: "#6197FF", fontFamily: "monospace", fontSize: "10px", alignSelf: "center" }}>
+                          +{references.length - 10} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section>
                 <SectionHeader title="Background" icon="▣" />
                 <div
                   style={{
@@ -443,7 +586,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                       lineHeight: 1.65,
                     }}
                   >
-                    {actor.description}
+                    {cleanIntelText(actor.description)}
                   </p>
                   <div
                     style={{
@@ -462,17 +605,6 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                           {actor.motivation.map((motivation) => (
                             <ToolChip key={motivation} name={motivation} />
                           ))}
-                        </div>
-                      </div>
-                    )}
-                    {actor.aliases.length > 0 && (
-                      <div>
-                        <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "5px" }}>
-                          Also Known As
-                        </div>
-                        <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "12px", lineHeight: 1.5 }}>
-                          {actor.aliases.slice(0, 8).join(", ")}
-                          {actor.aliases.length > 8 ? `, +${actor.aliases.length - 8} more` : ""}
                         </div>
                       </div>
                     )}
@@ -505,7 +637,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                           )}
                         </div>
                         <p style={{ margin: "6px 0 0", color: "rgba(255,255,255,0.64)", fontSize: "12px", lineHeight: 1.55 }}>
-                          {campaign.description}
+                          {cleanIntelText(campaign.description)}
                         </p>
                       </div>
                     ))}
@@ -552,37 +684,6 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                         : <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>None listed</span>}
                     </div>
                   </div>
-                </div>
-              </section>
-
-              <section>
-                <SectionHeader title="Sources" icon="↗" />
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {actor.sources.length > 0
-                    ? actor.sources.map((src, idx) => (
-                        <a
-                          key={`${src.source}-${src.sourceId ?? idx}`}
-                          href={src.url ?? undefined}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(event) => event.stopPropagation()}
-                          style={{
-                            color: "#97BBFF",
-                            border: "1px solid rgba(151,187,255,0.28)",
-                            background: "rgba(151,187,255,0.1)",
-                            borderRadius: "999px",
-                            padding: "5px 9px",
-                            fontFamily: "monospace",
-                            fontSize: "10px",
-                            fontWeight: 800,
-                            textDecoration: "none",
-                          }}
-                        >
-                          {src.source.toUpperCase()}
-                          {src.sourceId ? `:${src.sourceId}` : ""}
-                        </a>
-                      ))
-                    : <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>No sources listed</span>}
                 </div>
               </section>
 
