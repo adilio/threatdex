@@ -43,6 +43,28 @@ interface CliOptions {
   exclude?: string[]
 }
 
+const rarityRank = { MYTHIC: 4, LEGENDARY: 3, EPIC: 2, RARE: 1 }
+
+function rankActors(
+  actors: Record<string, unknown>[]
+): Record<string, unknown>[] {
+  return [...actors].sort((a, b) => {
+    const rarityA = rarityRank[a.rarity as keyof typeof rarityRank] ?? 0
+    const rarityB = rarityRank[b.rarity as keyof typeof rarityRank] ?? 0
+    if (rarityA !== rarityB) return rarityB - rarityA
+
+    const threatA = (a.threat_level as number | undefined) ?? 0
+    const threatB = (b.threat_level as number | undefined) ?? 0
+    if (threatA !== threatB) return threatB - threatA
+
+    const sourceCountA = Array.isArray(a.sources) ? a.sources.length : 0
+    const sourceCountB = Array.isArray(b.sources) ? b.sources.length : 0
+    if (sourceCountA !== sourceCountB) return sourceCountB - sourceCountA
+
+    return String(a.canonical_name ?? "").localeCompare(String(b.canonical_name ?? ""))
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Supabase Storage helpers
 // ----------------------------------------------------------------------------
@@ -186,18 +208,12 @@ async function fetchActors(opts: CliOptions): Promise<Record<string, unknown>[]>
     .from("actors")
     .select("*")
 
-  // Top-N mode: order by interestingness
-  if (opts.top) {
-    // Order by rarity rank, threat_level, sources count, then name
-    query = query.order("threat_level", { ascending: false })
-  }
-
   // Only fetch actors without images
   query = query.is("image_url", null)
 
-  // Apply limit
-  const limit = opts.limit ? parseInt(opts.limit, 10) : 100
-  query = query.limit(limit)
+  // Fetch a wide pool, then rank locally so image generation prioritizes
+  // the same high-interest actors as the homepage.
+  query = query.limit(1000)
 
   const { data, error } = await query
 
@@ -205,25 +221,15 @@ async function fetchActors(opts: CliOptions): Promise<Record<string, unknown>[]>
     throw new Error(`Failed to fetch actors: ${error.message}`)
   }
 
-  let actors = (data ?? []) as Record<string, unknown>[]
-
-  // Top-N sorting after fetch (since we can't easily express rarity ordering in PostgREST)
-  if (opts.top) {
-    const rarityRank = { MYTHIC: 4, LEGENDARY: 3, EPIC: 2, RARE: 1 }
-    actors = actors.sort((a, b) => {
-      const rarityA = rarityRank[a.rarity as keyof typeof rarityRank] ?? 0
-      const rarityB = rarityRank[b.rarity as keyof typeof rarityRank] ?? 0
-      if (rarityA !== rarityB) return rarityB - rarityA
-      return (b.threat_level as number) - (a.threat_level as number)
-    }).slice(0, parseInt(opts.top, 10))
-  }
+  let actors = rankActors((data ?? []) as Record<string, unknown>[])
 
   // Apply exclusions
   if (opts.exclude && opts.exclude.length > 0) {
     actors = actors.filter((a) => !opts.exclude!.includes(String(a.id)))
   }
 
-  return actors
+  const resultLimit = parseInt(opts.top ?? opts.limit ?? "100", 10)
+  return actors.slice(0, resultLimit)
 }
 
 // ---------------------------------------------------------------------------
