@@ -5,7 +5,13 @@ import netlifyReactRouter from "@netlify/vite-plugin-react-router"
 import path from "path"
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter(), netlifyReactRouter()],
+  plugins: [
+    tailwindcss(),
+    reactRouter(),
+    netlifyReactRouter({
+      // Netlify plugin options
+    }),
+  ],
   resolve: {
     alias: {
       "~": path.resolve(__dirname, "./app"),
