@@ -1,72 +1,93 @@
-import type React from "react"
+import React from "react"
 import type { ThreatActor, Rarity } from "~/schema"
 import { getRarityColor, getSophisticationScore } from "~/schema"
+import { BadgeCheck } from "lucide-react"
 import { RarityBadge } from "./RarityBadge"
 import { ThreatLevelBar } from "./ThreatLevelBar"
 
 interface CardFrontProps {
   actor: ThreatActor
   className?: string
-  variant?: "compact" | "expanded"
 }
 
-/** Strip markdown links [text](url) → text, and bare URLs, for clean display */
-function cleanDisplayText(text: string): string {
-  return text
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/https?:\/\/\S+/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
+// ---------------------------------------------------------------------------
+// Helper: Count verified sources for actor badge
+// ---------------------------------------------------------------------------
+
+function getVerifiedSourceCount(actor: ThreatActor): number {
+  const sources = actor.sources ?? []
+  // Count unique source types (mitre, etda, otx, manual, etc.)
+  const uniqueSources = new Set(sources.map((s) => s.source))
+  return uniqueSources.size
 }
+
+// ---------------------------------------------------------------------------
+// Rarity-specific border/glow styles
+// ---------------------------------------------------------------------------
 
 function getRarityBorderStyle(rarity: Rarity): React.CSSProperties {
-  const rarityColor = getRarityColor(rarity)
-
-  return {
-    border: `2px solid ${rarityColor}`,
-    boxShadow: `0 0 18px ${rarityColor}66, 0 28px 60px -36px ${rarityColor}77`,
+  switch (rarity) {
+    case "MYTHIC":
+      return {
+        border: "2px solid #FFFF00",
+        boxShadow:
+          "0 0 12px #FFFF00, 0 0 30px rgba(255,255,0,0.25), inset 0 0 20px rgba(255,255,0,0.04)",
+      }
+    case "LEGENDARY":
+      return {
+        border: "2px solid #FF0BBE",
+        boxShadow:
+          "0 0 10px rgba(255,11,190,0.7), 0 0 24px rgba(255,11,190,0.25), inset 0 0 16px rgba(255,11,190,0.04)",
+      }
+    case "EPIC":
+      return {
+        border: "2px solid #978BFF",
+        boxShadow: "0 0 8px rgba(151,139,255,0.5), 0 0 20px rgba(151,139,255,0.2)",
+      }
+    case "RARE":
+    default:
+      return {
+        border: "2px solid #6197FF",
+        boxShadow: "0 0 6px rgba(97,151,255,0.4)",
+      }
   }
 }
 
-function getCountryFlag(countryCode?: string) {
-  if (!countryCode) return "🌐"
-
-  return String.fromCodePoint(
-    ...Array.from(countryCode.toUpperCase()).map(
-      (character) => 0x1f1e6 - 65 + character.charCodeAt(0),
-    ),
-  )
-}
+// ---------------------------------------------------------------------------
+// Hero image placeholder — gradient + initials
+// ---------------------------------------------------------------------------
 
 function HeroPlaceholder({
   actor,
   rarity,
-  variant,
 }: {
   actor: ThreatActor
   rarity: Rarity
-  variant: "compact" | "expanded"
 }) {
   const initials = actor.canonicalName
     .split(/\s+/)
     .slice(0, 2)
-    .map((word) => word[0])
+    .map((w) => w[0])
     .join("")
     .toUpperCase()
 
   const gradientMap: Record<Rarity, string> = {
     MYTHIC:
-      "linear-gradient(135deg, rgba(2,84,236,0.92) 0%, rgba(255,255,0,0.86) 100%)",
+      "linear-gradient(135deg, #00123F 0%, #173AAA 40%, #FFFF00 100%)",
     LEGENDARY:
-      "linear-gradient(135deg, rgba(23,58,170,0.96) 0%, rgba(255,155,190,0.92) 100%)",
-    EPIC:
-      "linear-gradient(135deg, rgba(23,58,170,0.92) 0%, rgba(151,187,255,0.9) 100%)",
-    RARE:
-      "linear-gradient(135deg, rgba(2,84,236,0.9) 0%, rgba(97,151,255,0.96) 100%)",
+      "linear-gradient(135deg, #00123F 0%, #C64BA4 50%, #FF0BBE 100%)",
+    EPIC: "linear-gradient(135deg, #00123F 0%, #173AAA 55%, #978BFF 100%)",
+    RARE: "linear-gradient(135deg, #00123F 0%, #173AAA 60%, #6197FF 100%)",
   }
 
-  const fontSize = variant === "expanded" ? "92px" : "52px"
-  const flagSize = variant === "expanded" ? "78px" : "46px"
+  const countryFlag =
+    actor.countryCode
+      ? String.fromCodePoint(
+          ...Array.from(actor.countryCode.toUpperCase()).map(
+            (c) => 0x1f1e6 - 65 + c.charCodeAt(0),
+          ),
+        )
+      : "🌐"
 
   return (
     <div
@@ -78,42 +99,43 @@ function HeroPlaceholder({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: "12px",
+        gap: "8px",
         position: "relative",
         overflow: "hidden",
       }}
     >
+      {/* Decorative circuit-like lines */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage:
-            "linear-gradient(to right, var(--card-grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--card-grid-line) 1px, transparent 1px)",
-          backgroundSize: variant === "expanded" ? "32px 32px" : "26px 26px",
-          opacity: 0.78,
+          backgroundImage: `
+            repeating-linear-gradient(
+              90deg,
+              transparent,
+              transparent 28px,
+              rgba(97,151,255,0.07) 28px,
+              rgba(97,151,255,0.07) 29px
+            ),
+            repeating-linear-gradient(
+              0deg,
+              transparent,
+              transparent 28px,
+              rgba(97,151,255,0.07) 28px,
+              rgba(97,151,255,0.07) 29px
+            )
+          `,
         }}
       />
-      <div
-        style={{
-          position: "absolute",
-          inset: "auto 0 12% 0",
-          height: variant === "expanded" ? "120px" : "72px",
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.34) 18%, rgba(255,255,255,0.1) 52%, transparent 100%)",
-          filter: "blur(16px)",
-        }}
-      />
-      <span style={{ fontSize: flagSize, lineHeight: 1, zIndex: 1 }}>
-        {getCountryFlag(actor.countryCode)}
-      </span>
+      <span style={{ fontSize: "36px", lineHeight: 1 }}>{countryFlag}</span>
       <span
         style={{
-          fontFamily: "Orbitron, sans-serif",
-          fontSize,
+          fontFamily: "monospace",
+          fontSize: "32px",
           fontWeight: 900,
-          color: rarity === "MYTHIC" ? "#01123F" : "#FFFFFF",
-          letterSpacing: "0.08em",
-          textShadow: "0 8px 28px rgba(1,18,63,0.22)",
+          color: getRarityColor(rarity),
+          letterSpacing: "0.12em",
+          textShadow: `0 0 12px ${getRarityColor(rarity)}`,
           zIndex: 1,
         }}
       >
@@ -121,10 +143,10 @@ function HeroPlaceholder({
       </span>
       <span
         style={{
-          fontFamily: "JetBrains Mono, monospace",
-          fontSize: variant === "expanded" ? "12px" : "10px",
-          color: "rgba(255,255,255,0.82)",
-          letterSpacing: "0.18em",
+          fontFamily: "monospace",
+          fontSize: "9px",
+          color: "rgba(255,255,255,0.35)",
+          letterSpacing: "0.2em",
           textTransform: "uppercase",
           zIndex: 1,
         }}
@@ -135,26 +157,23 @@ function HeroPlaceholder({
   )
 }
 
+// ---------------------------------------------------------------------------
+// Motivation chip
+// ---------------------------------------------------------------------------
+
 const MOTIVATION_COLORS: Record<string, { bg: string; text: string }> = {
-  espionage: { bg: "rgba(2,84,236,0.16)", text: "#0254EC" },
-  financial: { bg: "rgba(255,255,0,0.18)", text: "#665700" },
-  sabotage: { bg: "rgba(255,155,190,0.2)", text: "#A10B6E" },
-  hacktivism: { bg: "rgba(151,187,255,0.24)", text: "#173AAA" },
-  military: { bg: "rgba(197,107,164,0.18)", text: "#8C2B6A" },
+  espionage: { bg: "rgba(2,84,236,0.25)", text: "#6197FF" },
+  financial: { bg: "rgba(255,255,0,0.15)", text: "#FFFF00" },
+  sabotage: { bg: "rgba(255,11,190,0.15)", text: "#FF0BBE" },
+  hacktivism: { bg: "rgba(151,139,255,0.2)", text: "#978BFF" },
+  military: { bg: "rgba(198,75,164,0.2)", text: "#FFBFD6" },
 }
 
-function MotivationChip({
-  motivation,
-  compact = false,
-}: {
-  motivation: string
-  compact?: boolean
-}) {
+function MotivationChip({ motivation }: { motivation: string }) {
   const style = MOTIVATION_COLORS[motivation] ?? {
-    bg: "rgba(2,84,236,0.14)",
-    text: "#0254EC",
+    bg: "rgba(97,151,255,0.15)",
+    text: "#6197FF",
   }
-
   return (
     <span
       style={{
@@ -162,12 +181,12 @@ function MotivationChip({
         alignItems: "center",
         background: style.bg,
         color: style.text,
-        border: `1px solid ${style.text}30`,
-        borderRadius: "999px",
-        fontFamily: "JetBrains Mono, monospace",
-        fontSize: compact ? "10px" : "11px",
+        border: `1px solid ${style.text}40`,
+        borderRadius: "3px",
+        fontFamily: "monospace",
+        fontSize: "9px",
         fontWeight: 700,
-        padding: compact ? "4px 9px" : "6px 12px",
+        padding: "2px 6px",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
         whiteSpace: "nowrap",
@@ -178,71 +197,28 @@ function MotivationChip({
   )
 }
 
-function InfoPill({
-  label,
-  value,
-  compact = false,
-}: {
-  label: string
-  value: string
-  compact?: boolean
-}) {
-  return (
-    <div
-      style={{
-        borderRadius: "14px",
-        border: "1px solid rgba(2,84,236,0.12)",
-        background: "var(--card-panel)",
-        padding: compact ? "8px 10px" : "12px 14px",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "JetBrains Mono, monospace",
-          fontSize: "9px",
-          color: "var(--text-muted)",
-          textTransform: "uppercase",
-          letterSpacing: "0.14em",
-          marginBottom: compact ? "4px" : "6px",
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontWeight: 800,
-          fontSize: compact ? "13px" : "16px",
-          lineHeight: 1.25,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  )
-}
+// ---------------------------------------------------------------------------
+// Sophistication pip row
+// ---------------------------------------------------------------------------
 
 function SophisticationPips({
   score,
   max = 5,
-  size = "compact",
 }: {
   score: number
   max?: number
-  size?: "compact" | "expanded"
 }) {
-  const dotSize = size === "expanded" ? "10px" : "8px"
-
   return (
-    <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-      {Array.from({ length: max }, (_, index) => (
+    <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+      {Array.from({ length: max }, (_, i) => (
         <div
-          key={index}
+          key={i}
           style={{
-            width: dotSize,
-            height: dotSize,
-            borderRadius: "999px",
-            backgroundColor: index < score ? "#6197FF" : "rgba(23,58,170,0.2)",
-            boxShadow: index < score ? "0 0 8px rgba(97,151,255,0.55)" : undefined,
+            width: "6px",
+            height: "6px",
+            borderRadius: "50%",
+            backgroundColor: i < score ? "#978BFF" : "#173AAA",
+            boxShadow: i < score ? "0 0 4px #978BFF80" : undefined,
           }}
         />
       ))}
@@ -250,133 +226,143 @@ function SophisticationPips({
   )
 }
 
-function AliasTags({
-  aliases,
-  total,
-  compact,
-}: {
-  aliases: string[]
-  total: number
-  compact: boolean
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: compact ? "5px" : "6px",
-        marginTop: compact ? "8px" : "12px",
-      }}
-    >
-      {aliases.map((alias) => (
-        <span
-          key={alias}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            borderRadius: "6px",
-            border: "1px solid rgba(97,151,255,0.22)",
-            background: "rgba(97,151,255,0.10)",
-            color: "#6197FF",
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: compact ? "9px" : "10px",
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            padding: compact ? "3px 7px" : "4px 9px",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {alias}
-        </span>
-      ))}
-      {total > aliases.length && (
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            borderRadius: "6px",
-            border: "1px solid rgba(97,151,255,0.14)",
-            background: "rgba(97,151,255,0.06)",
-            color: "var(--text-muted)",
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: compact ? "9px" : "10px",
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            padding: compact ? "3px 7px" : "4px 9px",
-          }}
-        >
-          +{total - aliases.length}
-        </span>
-      )}
-    </div>
-  )
-}
+// ---------------------------------------------------------------------------
+// CardFront
+// ---------------------------------------------------------------------------
 
-export function CardFront({
-  actor,
-  className,
-  variant = "compact",
-}: CardFrontProps) {
+export function CardFront({ actor, className }: CardFrontProps) {
   const rarityBorder = getRarityBorderStyle(actor.rarity)
   const sophScore = getSophisticationScore(actor.sophistication)
-  const aliases = actor.aliases.slice(0, variant === "expanded" ? 8 : 4)
-  const motivations = actor.motivation.slice(0, variant === "expanded" ? 4 : 2)
-  const activeWindow =
+
+  const displayAliases = actor.aliases.slice(0, 3)
+  const displayMotivations = actor.motivation.slice(0, 4)
+
+  const firstLastSeen =
     actor.firstSeen && actor.lastSeen
-      ? `${actor.firstSeen} - ${actor.lastSeen}`
+      ? `${actor.firstSeen} – ${actor.lastSeen}`
       : actor.firstSeen
         ? `Since ${actor.firstSeen}`
         : actor.lastSeen
           ? `Until ${actor.lastSeen}`
-          : "Unknown"
+          : null
 
-  const compact = variant === "compact"
+  // Calculate intel staleness (days since last intel update)
+  const intelLastUpdated = actor.intelLastUpdated || actor.lastUpdated
+  const intelStaleDays = intelLastUpdated
+    ? Math.floor((Date.now() - new Date(intelLastUpdated).getTime()) / (24 * 60 * 60 * 1000))
+    : null
 
   return (
     <div
-      className={`card-face ${className ?? ""}`.trim()}
+      className={className}
       style={{
-        background: "var(--card-bg)",
-        color: "var(--text-primary)",
+        // Phase 4.9: Fluid mobile sizing with aspect ratio
+        width: "100%",
+        maxWidth: "320px",
+        aspectRatio: "280 / 392",
+        borderRadius: "12px",
+        background: "linear-gradient(160deg, #00123F 0%, #0a1a4a 100%)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        fontFamily: "sans-serif",
         position: "relative",
         ...rarityBorder,
       }}
     >
+      {/* ------------------------------------------------------------------ */}
+      {/* Header bar                                                          */}
+      {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          background: "var(--card-header)",
-          padding: compact ? "12px 16px" : "16px 22px",
+          background: "linear-gradient(90deg, #00123F 0%, #173AAA 100%)",
+          padding: "6px 10px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: `1px solid ${getRarityColor(actor.rarity)}45`,
-          gap: "12px",
+          borderBottom: `1px solid ${getRarityColor(actor.rarity)}40`,
+          flexShrink: 0,
         }}
       >
         <span
           style={{
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: compact ? "11px" : "12px",
-            color: "var(--text-muted)",
-            letterSpacing: "0.18em",
+            fontFamily: "monospace",
+            fontSize: "10px",
+            color: "#6197FF",
+            letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}
         >
           {actor.mitreId ?? actor.id.toUpperCase()}
         </span>
-        <RarityBadge rarity={actor.rarity} size={compact ? "sm" : "md"} />
+        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          {/* Phase 4.1: Verified actor badge */}
+          {getVerifiedSourceCount(actor) >= 2 && (
+            <span
+              title={`Verified across ${getVerifiedSourceCount(actor)} sources`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "2px",
+                fontFamily: "monospace",
+                fontSize: "9px",
+                fontWeight: 700,
+                background: "rgba(0,200,83,0.2)",
+                color: "#00C853",
+                border: "1px solid rgba(0,200,83,0.5)",
+                borderRadius: "3px",
+                padding: "1px 4px",
+                letterSpacing: "0.05em",
+              }}
+            >
+              <BadgeCheck style={{ width: "10px", height: "10px" }} />
+              Verified
+            </span>
+          )}
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "9px",
+              background: actor.tlp === "GREEN" ? "rgba(0,200,83,0.2)" : "rgba(255,255,255,0.1)",
+              color: actor.tlp === "GREEN" ? "#00C853" : "#FFFFFF",
+              border: `1px solid ${actor.tlp === "GREEN" ? "#00C85380" : "#FFFFFF40"}`,
+              borderRadius: "3px",
+              padding: "1px 5px",
+              letterSpacing: "0.08em",
+            }}
+          >
+            TLP:{actor.tlp}
+          </span>
+          {intelStaleDays !== null && intelStaleDays > 30 && (
+            <span
+              title={`Intel data last updated ${intelStaleDays} days ago`}
+              style={{
+                fontFamily: "monospace",
+                fontSize: "8px",
+                background: "rgba(255,170,0,0.2)",
+                color: "#FFAA00",
+                border: "1px solid rgba(255,170,0,0.5)",
+                borderRadius: "3px",
+                padding: "1px 4px",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Intel {intelStaleDays}d old
+            </span>
+          )}
+          <RarityBadge rarity={actor.rarity} size="sm" />
+        </div>
       </div>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* Hero image                                                          */}
+      {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          height: compact ? "36%" : "40%",
-          minHeight: 0,
+          height: "140px",
           position: "relative",
+          flexShrink: 0,
           overflow: "hidden",
-          borderBottom: "1px solid rgba(2,84,236,0.08)",
         }}
       >
         {actor.imageUrl ? (
@@ -386,204 +372,248 @@ export function CardFront({
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
-          <HeroPlaceholder actor={actor} rarity={actor.rarity} variant={variant} />
+          <HeroPlaceholder actor={actor} rarity={actor.rarity} />
         )}
+        {/* Gradient fade at bottom to blend into card body */}
         <div
           style={{
             position: "absolute",
-            inset: 0,
-            background: "var(--card-hero-overlay)",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "40px",
+            background: "linear-gradient(to top, #00123F, transparent)",
           }}
         />
       </div>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* Name section                                                        */}
+      {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          padding: compact ? "12px 14px 12px" : "24px 22px 22px",
-          display: "flex",
-          flexDirection: "column",
-          gap: compact ? "10px" : "18px",
-          flex: 1,
-          overflowY: compact ? "hidden" : "auto",
+          padding: "6px 10px 4px",
+          flexShrink: 0,
         }}
       >
-        <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "start",
-              justifyContent: "space-between",
-              gap: compact ? "12px" : "18px",
-            }}
-          >
-            <div style={{ flex: 1 }}>
-              <h3
-                style={{
-                  margin: 0,
-                  fontFamily: "Orbitron, sans-serif",
-                  fontSize: compact ? "24px" : "36px",
-                  lineHeight: 1.02,
-                  letterSpacing: "0.03em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {actor.canonicalName}
-              </h3>
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  fontSize: compact ? "12px" : "16px",
-                  lineHeight: 1.5,
-                  color: "var(--text-muted)",
-                  overflowWrap: "anywhere",
-                  wordBreak: "break-word",
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: compact ? 1 : 3,
-                  overflow: "hidden",
-                }}
-              >
-                {actor.tagline ?? cleanDisplayText(actor.description)}
-              </p>
-            </div>
-            <div
-              style={{
-                display: "grid",
-                placeItems: "center",
-                minWidth: compact ? "68px" : "92px",
-                aspectRatio: "1 / 1",
-                borderRadius: compact ? "18px" : "24px",
-                background:
-                  "linear-gradient(180deg, rgba(2,84,236,0.1) 0%, rgba(255,191,255,0.22) 100%)",
-                border: "1px solid rgba(2,84,236,0.14)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.24)",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "Orbitron, sans-serif",
-                  fontSize: compact ? "28px" : "40px",
-                  fontWeight: 900,
-                  color: getRarityColor(actor.rarity),
-                  letterSpacing: "0.08em",
-                }}
-              >
-                {actor.canonicalName.slice(0, 2).toUpperCase()}
-              </span>
-            </div>
-          </div>
-          {aliases.length > 0 && (
-            <AliasTags aliases={aliases} total={actor.aliases.length} compact={compact} />
-          )}
-        </div>
-
         <div
           style={{
-            borderRadius: compact ? "14px" : "24px",
-            background: "var(--card-panel)",
-            border: "1px solid rgba(2,84,236,0.12)",
-            padding: compact ? "10px 12px" : "18px",
-            display: "grid",
-            gap: compact ? "8px" : "16px",
+            fontFamily: "sans-serif",
+            fontWeight: 800,
+            fontSize: "16px",
+            color: "#FFFFFF",
+            lineHeight: 1.2,
+            letterSpacing: "-0.01em",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
+          {actor.canonicalName}
+        </div>
+        {actor.tagline && (
+          <div
+            style={{
+              fontFamily: "sans-serif",
+              fontSize: "10px",
+              color: "#978BFF",
+              fontStyle: "italic",
+              marginTop: "1px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {actor.tagline}
+          </div>
+        )}
+        {displayAliases.length > 0 && (
+          <div
+            style={{
+              fontFamily: "monospace",
+              fontSize: "9px",
+              color: "#6197FF",
+              marginTop: "3px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            aka {displayAliases.join(" · ")}
+            {actor.aliases.length > 3 && (
+              <span style={{ color: "#978BFF" }}>
+                {" "}+{actor.aliases.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Stats bar                                                           */}
+      {/* ------------------------------------------------------------------ */}
+      <div
+        style={{
+          margin: "4px 10px",
+          background: "rgba(23,58,170,0.3)",
+          borderRadius: "6px",
+          border: "1px solid rgba(97,151,255,0.15)",
+          padding: "6px 8px",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "6px",
+          }}
+        >
+          {/* Threat level */}
           <div>
             <div
               style={{
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: compact ? "10px" : "11px",
-                color: "var(--text-muted)",
+                fontFamily: "monospace",
+                fontSize: "8px",
+                color: "#6197FF",
                 textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                marginBottom: "8px",
+                letterSpacing: "0.1em",
+                marginBottom: "3px",
               }}
             >
               Threat Level
             </div>
-            <ThreatLevelBar level={actor.threatLevel} showLabel={!compact} />
+            <ThreatLevelBar level={actor.threatLevel} />
           </div>
 
-          {compact ? (
+          {/* Sophistication */}
+          <div>
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "8px",
-              }}
-            >
-              <InfoPill
-                label="Origin"
-                value={`${actor.country ?? "Unknown"} ${getCountryFlag(actor.countryCode)}`}
-                compact
-              />
-              <InfoPill label="Active" value={activeWindow} compact />
-            </div>
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                gap: "14px",
-              }}
-            >
-              <InfoPill
-                label="Origin"
-                value={`${actor.country ?? "Unknown"} ${getCountryFlag(actor.countryCode)}`}
-              />
-              <InfoPill label="Active" value={activeWindow} />
-              <InfoPill
-                label="Sources"
-                value={`${actor.sources.length} feed${actor.sources.length === 1 ? "" : "s"}`}
-              />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              borderTop: compact ? "none" : "1px solid rgba(2,84,236,0.08)",
-              paddingTop: compact ? 0 : "12px",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: "9px",
-                color: "var(--text-muted)",
+                fontFamily: "monospace",
+                fontSize: "8px",
+                color: "#6197FF",
                 textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                flexShrink: 0,
+                letterSpacing: "0.1em",
+                marginBottom: "3px",
               }}
             >
-              {compact ? "Soph" : "Sophistication"}
-            </span>
-            <SophisticationPips
-              score={sophScore}
-              size={compact ? "compact" : "expanded"}
-            />
-            <span
+              Sophistication
+            </div>
+            <SophisticationPips score={sophScore} />
+            <div
               style={{
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: compact ? "10px" : "13px",
-                color: "var(--text-muted)",
-                marginLeft: "auto",
+                fontFamily: "monospace",
+                fontSize: "9px",
+                color: "#FFBFFF",
+                marginTop: "2px",
               }}
             >
               {actor.sophistication}
-            </span>
+            </div>
           </div>
-        </div>
 
-        {!compact && motivations.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-            {motivations.map((motivation) => (
-              <MotivationChip key={motivation} motivation={motivation} />
-            ))}
+          {/* Country */}
+          <div>
+            <div
+              style={{
+                fontFamily: "monospace",
+                fontSize: "8px",
+                color: "#6197FF",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                marginBottom: "2px",
+              }}
+            >
+              Origin
+            </div>
+            <div
+              style={{
+                fontFamily: "monospace",
+                fontSize: "10px",
+                color: "#FFFFFF",
+              }}
+            >
+              {actor.country ?? "Unknown"}
+              {actor.countryCode && (
+                <span style={{ marginLeft: "4px" }}>
+                  {String.fromCodePoint(
+                    ...Array.from(actor.countryCode.toUpperCase()).map(
+                      (c) => 0x1f1e6 - 65 + c.charCodeAt(0),
+                    ),
+                  )}
+                </span>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Active period */}
+          {firstLastSeen && (
+            <div>
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "8px",
+                  color: "#6197FF",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: "2px",
+                }}
+              >
+                Active
+              </div>
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "10px",
+                  color: "#FFFFFF",
+                }}
+              >
+                {firstLastSeen}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Footer — motivation tags                                            */}
+      {/* ------------------------------------------------------------------ */}
+      <div
+        style={{
+          padding: "4px 10px 8px",
+          marginTop: "auto",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "4px",
+          alignItems: "center",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "monospace",
+            fontSize: "8px",
+            color: "#6197FF",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            marginRight: "2px",
+          }}
+        >
+          Motivation:
+        </span>
+        {displayMotivations.map((m) => (
+          <MotivationChip key={m} motivation={m} />
+        ))}
+      </div>
+
+      {/* Rarity-colored bottom accent line */}
+      <div
+        style={{
+          height: "3px",
+          background: `linear-gradient(90deg, transparent, ${getRarityColor(actor.rarity)}, transparent)`,
+          flexShrink: 0,
+        }}
+      />
     </div>
   )
 }

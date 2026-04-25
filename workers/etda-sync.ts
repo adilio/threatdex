@@ -13,10 +13,9 @@
  */
 
 import * as cheerio from "cheerio"
-import { supabase, logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
-import { findMatchingActor, mergeActors } from "./shared/dedup.js"
+import { logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
+import { upsertActorPreservingMedia } from "./shared/upsert.js"
 import { computeThreatLevel, computeRarity } from "./shared/rarity.js"
-import { toDbRecord } from "./shared/models.js"
 import type { ThreatActorData, TTPUsage, SourceAttribution } from "./shared/models.js"
 
 // ---------------------------------------------------------------------------
@@ -453,32 +452,17 @@ async function main(): Promise<void> {
       }
 
       try {
-        let actor = parseActorPage(cardHtml, groupName)
+        const actor = parseActorPage(cardHtml, groupName)
         if (!actor) {
           console.warn(`Skipping group ${groupName} — parse returned null`)
           continue
         }
 
-        const existingId = await findMatchingActor(actor)
-        if (existingId && existingId !== actor.id) {
-          const { data: existingRow } = await supabase
-            .from("actors")
-            .select("*")
-            .eq("id", existingId)
-            .single()
-          if (existingRow) {
-            actor = mergeActors(existingRow as Record<string, unknown>, actor)
-          }
-        }
-
-        const { error } = await supabase
-          .from("actors")
-          .upsert(toDbRecord(actor), { onConflict: "id" })
-
-        if (error) {
+        const result = await upsertActorPreservingMedia(actor)
+        if (result.error) {
           console.warn(
-            `Supabase upsert error for ${actor.canonicalName}:`,
-            error.message
+            `Upsert error for ${actor.canonicalName}:`,
+            result.error
           )
         } else {
           recordsSynced++

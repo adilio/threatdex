@@ -13,13 +13,17 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "workers:mitre": "node --env-file-if-exists=.env --import tsx workers/mitre-sync.ts",
-    "workers:etda": "node --env-file-if-exists=.env --import tsx workers/etda-sync.ts",
-    "workers:otx": "node --env-file-if-exists=.env --import tsx workers/otx-sync.ts",
-    "workers:image": "node --env-file-if-exists=.env --import tsx workers/image-gen.ts",
-    "workers:all": "npm run workers:mitre && npm run workers:etda && npm run workers:otx"
+    "workers:mitre": "tsx workers/mitre-sync.ts",
+    "workers:etda": "tsx workers/etda-sync.ts",
+    "workers:otx": "tsx workers/otx-sync.ts",
+    "workers:image": "tsx workers/image-gen.ts",
+    "workers:backup": "tsx workers/backup.ts",
+    "workers:cleanup-otx": "tsx workers/cleanup-otx-pollution.ts",
+    "workers:diagnose": "tsx workers/diagnose.ts",
+    "workers:all": "pnpm workers:mitre && pnpm workers:etda && pnpm workers:otx"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@react-router/node": "^7.0.0",
     "@react-router/serve": "^7.0.0",
     "@supabase/supabase-js": "^2.39.3",
@@ -60,11 +64,6 @@
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "esbuild": ">=0.25.0"
-    }
   },
   "packageManager": "pnpm@9.1.0"
 }

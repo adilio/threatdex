@@ -11,10 +11,9 @@
  *   OTX_API_KEY=<key> npx tsx workers/otx-sync.ts
  */
 
-import { supabase, logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
-import { findMatchingActor, mergeActors } from "./shared/dedup.js"
+import { logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
+import { upsertActorPreservingMedia } from "./shared/upsert.js"
 import { computeThreatLevel, computeRarity } from "./shared/rarity.js"
-import { toDbRecord } from "./shared/models.js"
 import type { ThreatActorData, TTPUsage, Campaign, SourceAttribution } from "./shared/models.js"
 
 // ---------------------------------------------------------------------------
@@ -39,6 +38,12 @@ const THREAT_ACTOR_TAGS = new Set([
   "nation-state",
 ])
 
+// Regex for actor name patterns - APT numbers, TA numbers, and proper names
+const ACTOR_NAME_RE = /^(?:apt[\s-]?\d+|ta\d+|fin\d+|unc\d+|g\d+|[A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+){0,3})$/
+
+// Words that indicate an article title rather than an actor name
+const SENTENCE_WORDS = /\b(the|and|with|by|targeting|inside|using|advisory|chronology|operation|unmasking|fake|new|attack|attacks|expands|targeted|reveals|infects|executed|uncovers|delivers|escalation|implant|implants|backdoor|campaign|variant|techniques|deployed|leverages)\b/i
+
 const PAGE_SIZE = 50
 
 // ---------------------------------------------------------------------------
@@ -58,6 +63,39 @@ function slugifyActor(name: string): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OtxPulse = Record<string, any>
+
+/**
+ * Check if a name looks like a threat actor name (not an article title).
+ * Filters out sentence-like titles like "Discovers Multi-Year Sophisticated Chinese DNS Operation".
+ */
+function looksLikeActorName(name: string): boolean {
+  const trimmed = name.trim()
+  if (trimmed.length === 0 || trimmed.length > 40) return false
+  const wordCount = trimmed.split(/\s+/).length
+  if (wordCount > 4) return false
+  // Reject sentence-y words
+  if (SENTENCE_WORDS.test(trimmed)) {
+    return false
+  }
+  return ACTOR_NAME_RE.test(trimmed)
+}
+
+/**
+ * Extract a candidate actor name from a pulse.
+ * First checks tags for known actor aliases, then falls back to title parsing.
+ * Returns null if no clean actor name can be extracted.
+ */
+function extractActorCandidate(pulse: OtxPulse): string | null {
+  const tags: string[] = (pulse["tags"] ?? []).map((t: string) => t.trim())
+  // First check tags for actor-like names
+  for (const tag of tags) {
+    if (looksLikeActorName(tag)) return tag
+  }
+  // Fall back to a leading proper-noun in the title
+  const name = cleanPulseName(pulse["name"] ?? "")
+  if (looksLikeActorName(name)) return name
+  return null
+}
 
 function isThreatActorPulse(pulse: OtxPulse): boolean {
   const tags: string[] = (pulse["tags"] ?? []).map((t: string) => t.toLowerCase())
@@ -177,8 +215,8 @@ async function* iterThreatActorPulses(): AsyncGenerator<OtxPulse> {
 // ---------------------------------------------------------------------------
 
 function parsePulse(pulse: OtxPulse): ThreatActorData | null {
-  const name = cleanPulseName(pulse["name"] ?? "")
-  if (!name) return null
+  const candidateName = extractActorCandidate(pulse)
+  if (!candidateName) return null
 
   const description: string = pulse["description"] ?? ""
   const tags: string[] = pulse["tags"] ?? []
@@ -191,7 +229,7 @@ function parsePulse(pulse: OtxPulse): ThreatActorData | null {
   // Treat each unique pulse as a campaign
   const campaigns: Campaign[] = [
     {
-      name: pulse["name"] ?? name,
+      name: pulse["name"] ?? candidateName,
       year: extractYear(created),
       description: description.slice(0, 300),
     },
@@ -217,7 +255,14 @@ function parsePulse(pulse: OtxPulse): ThreatActorData | null {
   }
   if (motivation.length === 0) motivation.push("espionage")
 
-  const sophistication = "High" // OTX actor pulses are typically about notable groups
+  // Derive sophistication from signal strength, not hardcoded
+  const isStateSponsored = /nation-state|state.sponsored|apt|apt\d+/i.test(combinedText)
+  const sophistication = deriveSophistication({
+    ttpsCount: ttps.length,
+    campaignsCount: campaigns.length,
+    toolsCount: tools.length,
+    isStateSponsored,
+  })
 
   const threatLevel = computeThreatLevel({
     sophistication,
@@ -243,8 +288,8 @@ function parsePulse(pulse: OtxPulse): ThreatActorData | null {
   })
 
   return {
-    id: slugifyActor(name),
-    canonicalName: name,
+    id: slugifyActor(candidateName),
+    canonicalName: candidateName,
     aliases: [],
     motivation,
     threatLevel,
@@ -264,6 +309,25 @@ function parsePulse(pulse: OtxPulse): ThreatActorData | null {
   }
 }
 
+/**
+ * Derive sophistication from observable signals.
+ * OTX pulses don't have explicit sophistication, so we infer from TTPs, campaigns, and state-sponsorship signals.
+ */
+function deriveSophistication(params: {
+  ttpsCount: number
+  campaignsCount: number
+  toolsCount: number
+  isStateSponsored: boolean
+}): string {
+  const { ttpsCount, campaignsCount, toolsCount, isStateSponsored } = params
+  const score = ttpsCount + campaignsCount * 2 + toolsCount * 0.5 + (isStateSponsored ? 10 : 0)
+  if (score >= 30 && isStateSponsored) return "Nation-State Elite"
+  if (score >= 20) return "Very High"
+  if (score >= 10) return "High"
+  if (score >= 4) return "Medium"
+  return "Low"
+}
+
 // ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
@@ -275,29 +339,14 @@ async function main(): Promise<void> {
   try {
     for await (const pulse of iterThreatActorPulses()) {
       try {
-        let actor = parsePulse(pulse)
+        const actor = parsePulse(pulse)
         if (!actor) continue
 
-        const existingId = await findMatchingActor(actor)
-        if (existingId && existingId !== actor.id) {
-          const { data: existingRow } = await supabase
-            .from("actors")
-            .select("*")
-            .eq("id", existingId)
-            .single()
-          if (existingRow) {
-            actor = mergeActors(existingRow as Record<string, unknown>, actor)
-          }
-        }
-
-        const { error } = await supabase
-          .from("actors")
-          .upsert(toDbRecord(actor), { onConflict: "id" })
-
-        if (error) {
+        const result = await upsertActorPreservingMedia(actor)
+        if (result.error) {
           console.warn(
-            `Supabase upsert error for ${actor.canonicalName}:`,
-            error.message
+            `Upsert error for ${actor.canonicalName}:`,
+            result.error
           )
         } else {
           recordsSynced++

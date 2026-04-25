@@ -19,7 +19,7 @@ export function getSupabase(): SupabaseClient {
   const key = process.env.SUPABASE_SERVICE_KEY
   if (!url || !key) {
     throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in the environment"
+      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in the environment"
     )
   }
   _supabase = createClient(url, key)

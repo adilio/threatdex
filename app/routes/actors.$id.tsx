@@ -1,40 +1,11 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router"
 import { useLoaderData, Link } from "react-router"
-import { getSupabaseServerClient } from "~/lib/supabase.server"
+import { supabase } from "~/lib/supabase.server"
 import { ThreatActorCard } from "~/components/ThreatActorCard"
 import { getRarityColor } from "~/schema"
 import type { ThreatActor } from "~/schema"
 
 function mapToActor(row: Record<string, unknown>): ThreatActor {
-  const ttps = ((row.ttps as Record<string, unknown>[] | undefined) ?? []).map(
-    (ttp) => ({
-      techniqueId:
-        (ttp.techniqueId as string | undefined) ??
-        (ttp.technique_id as string | undefined) ??
-        "",
-      techniqueName:
-        (ttp.techniqueName as string | undefined) ??
-        (ttp.technique_name as string | undefined) ??
-        "",
-      tactic: (ttp.tactic as string | undefined) ?? "",
-    }),
-  )
-
-  const sources = (
-    (row.sources as Record<string, unknown>[] | undefined) ?? []
-  ).map((source) => ({
-    source: source.source as ThreatActor["sources"][number]["source"],
-    sourceId:
-      (source.sourceId as string | undefined) ??
-      (source.source_id as string | undefined) ??
-      undefined,
-    fetchedAt:
-      (source.fetchedAt as string | undefined) ??
-      (source.fetched_at as string | undefined) ??
-      new Date().toISOString(),
-    url: (source.url as string | undefined) ?? undefined,
-  }))
-
   return {
     id: row.id as string,
     canonicalName: row.canonical_name as string,
@@ -50,25 +21,20 @@ function mapToActor(row: Record<string, unknown>): ThreatActor {
     sectors: (row.sectors as string[]) ?? [],
     geographies: (row.geographies as string[]) ?? [],
     tools: (row.tools as string[]) ?? [],
-    ttps,
+    ttps: (row.ttps as ThreatActor["ttps"]) ?? [],
     campaigns: (row.campaigns as ThreatActor["campaigns"]) ?? [],
     description: row.description as string,
     tagline: (row.tagline as string | undefined) ?? undefined,
     rarity: row.rarity as ThreatActor["rarity"],
     imageUrl: (row.image_url as string | undefined) ?? undefined,
     imagePrompt: (row.image_prompt as string | undefined) ?? undefined,
-    sources,
+    sources: (row.sources as ThreatActor["sources"]) ?? [],
     tlp: (row.tlp as ThreatActor["tlp"]) ?? "WHITE",
     lastUpdated: row.last_updated as string,
   }
 }
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  if (!params.id) {
-    throw new Response("Not Found", { status: 404 })
-  }
-
-  const supabase = getSupabaseServerClient()
   const { data, error } = await supabase
     .from("actors")
     .select("*")
@@ -128,22 +94,79 @@ function TTPSection({ ttps }: { ttps: ThreatActor["ttps"] }) {
   )
 }
 
+// Phase 4.6: Improved campaign timeline sorted by year
 function CampaignsSection({ campaigns }: { campaigns: ThreatActor["campaigns"] }) {
   if (campaigns.length === 0) return null
+
+  // Sort campaigns by year descending, then by name
+  const sortedCampaigns = [...campaigns].sort((a, b) => {
+    const yearA = a.year ?? "9999"
+    const yearB = b.year ?? "9999"
+    if (yearA !== yearB) return yearB.localeCompare(yearA)
+    return a.name.localeCompare(b.name)
+  })
+
+  // Group by decade for visual structure
+  const byDecade: Record<string, typeof sortedCampaigns> = {}
+  for (const campaign of sortedCampaigns) {
+    const year = campaign.year ?? "Unknown"
+    const decade = year === "Unknown" ? "Unknown" : `${year.slice(0, 3)}0s`
+    if (!byDecade[decade]) byDecade[decade] = []
+    byDecade[decade].push(campaign)
+  }
+
   return (
     <section className="mt-10">
-      <h2 className="font-bold text-wiz-blue mb-4 uppercase tracking-widest text-sm">Campaigns</h2>
-      <div className="space-y-3">
-        {campaigns.map((campaign, idx) => (
-          <div key={idx} className="relative pl-6 border-l-2 border-wiz-blue/50 hover:border-wiz-blue transition-colors">
-            <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-wiz-blue" />
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="font-semibold text-cloudy-white">{campaign.name}</span>
-              {campaign.year && <span className="text-xs font-mono text-sky-blue/60">{campaign.year}</span>}
+      <h2 className="font-bold text-wiz-blue mb-6 uppercase tracking-widest text-sm flex items-center gap-2">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Campaign Timeline
+      </h2>
+
+      <div className="relative">
+        {/* Vertical timeline line */}
+        <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-wiz-blue via-blue-shadow to-sky-blue/30" />
+
+        <div className="space-y-6">
+          {Object.entries(byDecade).map(([decade, decadeCampaigns]) => (
+            <div key={decade} className="relative">
+              {/* Decade marker */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-4 h-4 rounded-full bg-wiz-blue shadow-[0_0_8px_#0254EC66] z-10" />
+                <span className="text-xs font-mono font-bold text-sky-blue uppercase tracking-wider">
+                  {decade}
+                </span>
+                <div className="flex-1 h-px bg-blue-shadow/30" />
+              </div>
+
+              {/* Campaigns in this decade */}
+              <div className="ml-8 space-y-3">
+                {decadeCampaigns.map((campaign, idx) => (
+                  <div
+                    key={idx}
+                    className="group relative bg-blue-shadow/10 border border-blue-shadow/30 hover:border-wiz-blue/50 rounded-lg p-4 transition-all"
+                  >
+                    <div className="absolute -left-[33px] top-4 w-2 h-2 rounded-full bg-sky-blue/50 group-hover:bg-wiz-blue transition-colors" />
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <h3 className="font-semibold text-cloudy-white group-hover:text-sky-blue transition-colors">
+                        {campaign.name}
+                      </h3>
+                      {campaign.year && (
+                        <span className="text-xs font-mono text-sky-blue/60 bg-serious-blue px-2 py-0.5 rounded">
+                          {campaign.year}
+                        </span>
+                      )}
+                    </div>
+                    {campaign.description && (
+                      <p className="text-sm text-sky-blue/70 leading-relaxed">{campaign.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="text-sm text-sky-blue/70 leading-relaxed">{campaign.description}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   )

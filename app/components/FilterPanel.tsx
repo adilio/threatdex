@@ -1,8 +1,8 @@
-import { useCallback, useState } from "react"
-import { useNavigate, useSearchParams } from "react-router"
-import { X, SlidersHorizontal, ChevronDown } from "lucide-react"
-import type { Motivation, Rarity } from "~/schema"
-import clsx from "clsx"
+import { useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router";
+import { X, SlidersHorizontal } from "lucide-react";
+import type { Motivation, Rarity } from "~/schema";
+import clsx from "clsx";
 
 const MOTIVATIONS: { value: Motivation; label: string }[] = [
   { value: "espionage", label: "Espionage" },
@@ -10,198 +10,229 @@ const MOTIVATIONS: { value: Motivation; label: string }[] = [
   { value: "sabotage", label: "Sabotage" },
   { value: "hacktivism", label: "Hacktivism" },
   { value: "military", label: "Military" },
-]
+];
 
 const RARITIES: { value: Rarity; label: string; color: string }[] = [
-  { value: "MYTHIC", label: "Mythic", color: "#665700" },
-  { value: "LEGENDARY", label: "Legendary", color: "#A10B6E" },
-  { value: "EPIC", label: "Epic", color: "#173AAA" },
-  { value: "RARE", label: "Rare", color: "#0254EC" },
-]
+  { value: "MYTHIC", label: "Mythic", color: "#FFFF00" },
+  { value: "LEGENDARY", label: "Legendary", color: "#FF0BBE" },
+  { value: "EPIC", label: "Epic", color: "#978BFF" },
+  { value: "RARE", label: "Rare", color: "#6197FF" },
+];
+
+// Phase 4.4: Source filter options
+const SOURCES: { value: string; label: string }[] = [
+  { value: "mitre", label: "MITRE" },
+  { value: "etda", label: "ETDA" },
+  { value: "otx", label: "OTX" },
+  { value: "manual", label: "Manual" },
+];
 
 interface FilterPanelProps {
-  initialCountry?: string
-  initialMotivation?: string
-  initialRarity?: string
-  initialSort?: string
-  className?: string
+  initialCountry?: string;
+  initialMotivation?: string;
+  initialRarity?: string;
+  initialSource?: string;
+  initialVerified?: string;
+  className?: string;
 }
 
 export function FilterPanel({
   initialCountry = "",
   initialMotivation = "",
   initialRarity = "",
-  initialSort = "threat_desc",
+  initialSource = "",
+  initialVerified = "true",
   className,
 }: FilterPanelProps) {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const updateParam = useCallback(
+    (key: string, value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+      params.delete("offset");
+      navigate(`?${params.toString()}`);
+    },
+    [navigate, searchParams],
+  );
+
+  const toggleMotivation = useCallback(
+    (motivation: Motivation) => {
+      const current = initialMotivation;
+      const next = current === motivation ? "" : motivation;
+      updateParam("motivation", next);
+    },
+    [initialMotivation, updateParam],
+  );
+
+  // Phase 4.2: Toggle verified filter
+  const toggleVerified = useCallback(() => {
+    const current = initialVerified === "true";
+    const next = !current;
+    updateParam("verified", next ? "true" : "false");
+  }, [initialVerified, updateParam]);
+
+  const clearAll = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("country");
+    params.delete("motivation");
+    params.delete("rarity");
+    params.delete("source");
+    params.delete("offset");
+    // Don't clear verified - it has a default
+    navigate(`?${params.toString()}`);
+  }, [navigate, searchParams]);
 
   const hasActiveFilters =
     Boolean(initialCountry) ||
     Boolean(initialMotivation) ||
     Boolean(initialRarity) ||
-    initialSort !== "threat_desc"
-
-  const activeFilterCount =
-    [initialCountry, initialMotivation, initialRarity].filter(Boolean).length +
-    (initialSort !== "threat_desc" ? 1 : 0)
-
-  const [open, setOpen] = useState(hasActiveFilters)
-
-  const updateParam = useCallback(
-    (key: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (value) {
-        params.set(key, value)
-      } else {
-        params.delete(key)
-      }
-      params.delete("offset")
-      navigate(`?${params.toString()}`)
-    },
-    [navigate, searchParams],
-  )
-
-  const toggleMotivation = useCallback(
-    (motivation: Motivation) => {
-      const nextMotivation = initialMotivation === motivation ? "" : motivation
-      updateParam("motivation", nextMotivation)
-    },
-    [initialMotivation, updateParam],
-  )
-
-  const clearAll = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete("country")
-    params.delete("motivation")
-    params.delete("rarity")
-    params.delete("sort")
-    params.delete("offset")
-    navigate(`?${params.toString()}`)
-  }, [navigate, searchParams])
+    Boolean(initialSource);
 
   return (
-    <div className={clsx("dex-panel flex flex-col gap-0 px-4 py-3", className)}>
-      {/* Always-visible row: toggle + sort */}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className={clsx(
-            "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-colors",
-            open || hasActiveFilters
-              ? "border-wiz-blue bg-wiz-blue/10 text-wiz-blue"
-              : "border-app-border bg-app-chip text-app-muted hover:text-app-text",
-          )}
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filters
-          {activeFilterCount > 0 && (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-wiz-blue text-[9px] font-bold text-white">
-              {activeFilterCount}
-            </span>
-          )}
-          <ChevronDown
-            className={clsx(
-              "h-3 w-3 transition-transform duration-200",
-              open && "rotate-180",
-            )}
-          />
-        </button>
-
-        <select
-          value={initialSort}
-          onChange={(event) => updateParam("sort", event.target.value)}
-          aria-label="Sort actors"
-          className="rounded-full border border-app-border bg-app-panel px-4 py-2.5 text-sm text-app-text outline-none"
-        >
-          <option value="threat_desc">Biggest threats</option>
-          <option value="recent_desc">Most recent activity</option>
-          <option value="updated_desc">Recently updated</option>
-          <option value="name_asc">Name A-Z</option>
-        </select>
-
-        {hasActiveFilters && !open && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="inline-flex items-center gap-1.5 rounded-full border border-app-border bg-app-panel px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-app-muted transition-colors hover:text-app-text"
-            aria-label="Clear all filters"
-          >
-            <X className="h-3 w-3" />
-            Clear
-          </button>
-        )}
+    <div
+      className={clsx(
+        "flex flex-wrap items-center gap-3",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-1.5 text-xs text-sky-blue/50 font-semibold uppercase tracking-wider">
+        <SlidersHorizontal className="w-3.5 h-3.5" />
+        Filters
       </div>
 
-      {/* Collapsible filter controls */}
-      {open && (
-        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-app-border pt-3">
-          <input
-            type="text"
-            value={initialCountry}
-            onChange={(event) => updateParam("country", event.target.value.toUpperCase())}
-            placeholder="Country code"
-            aria-label="Filter by country"
-            className="rounded-full border border-app-border bg-app-panel px-4 py-2.5 text-sm text-app-text outline-none placeholder:text-app-muted"
-          />
+      {/* Country free-text filter */}
+      <input
+        type="text"
+        value={initialCountry}
+        onChange={(e) => updateParam("country", e.target.value)}
+        placeholder="Country…"
+        aria-label="Filter by country"
+        className="px-3 py-1.5 bg-blue-shadow/20 border border-blue-shadow hover:border-sky-blue/50 focus:border-wiz-blue focus:ring-1 focus:ring-wiz-blue/20 rounded-lg text-xs text-cloudy-white placeholder-sky-blue/40 outline-none transition-colors w-32"
+      />
 
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by motivation">
-            {MOTIVATIONS.map(({ value, label }) => {
-              const active = initialMotivation === value
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => toggleMotivation(value)}
-                  aria-pressed={active}
-                  className={clsx(
-                    "rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition-all",
-                    active
-                      ? "border-wiz-blue bg-wiz-blue text-white"
-                      : "border-app-border bg-app-panel text-app-muted hover:text-app-text",
-                  )}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-
-          <select
-            value={initialRarity}
-            onChange={(event) => updateParam("rarity", event.target.value)}
-            aria-label="Filter by rarity"
-            className="rounded-full border border-app-border bg-app-panel px-4 py-2.5 text-sm text-app-text outline-none"
-            style={{
-              color: initialRarity
-                ? RARITIES.find((rarity) => rarity.value === initialRarity)?.color
-                : undefined,
-            }}
-          >
-            <option value="">All rarities</option>
-            {RARITIES.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-
-          {hasActiveFilters && (
+      {/* Motivation chips */}
+      <div
+        className="flex flex-wrap gap-1.5"
+        role="group"
+        aria-label="Filter by motivation"
+      >
+        {MOTIVATIONS.map(({ value, label }) => {
+          const active = initialMotivation === value;
+          return (
             <button
-              type="button"
-              onClick={clearAll}
-              className="inline-flex items-center gap-2 rounded-full border border-app-border bg-app-panel px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-app-muted transition-colors hover:text-app-text"
-              aria-label="Clear all filters"
+              key={value}
+              onClick={() => toggleMotivation(value)}
+              aria-pressed={active}
+              className={clsx(
+                "px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide transition-all border",
+                active
+                  ? "bg-wiz-blue border-wiz-blue text-white"
+                  : "bg-blue-shadow/20 border-blue-shadow/60 text-sky-blue/70 hover:border-sky-blue hover:text-cloudy-white",
+              )}
             >
-              <X className="h-3.5 w-3.5" />
-              Clear
+              {label}
             </button>
-          )}
-        </div>
+          );
+        })}
+      </div>
+
+      {/* Phase 4.4: Source filter */}
+      <select
+        value={initialSource}
+        onChange={(e) => updateParam("source", e.target.value)}
+        aria-label="Filter by source"
+        className="px-3 py-1.5 bg-blue-shadow/20 border border-blue-shadow hover:border-sky-blue/50 focus:border-wiz-blue focus:ring-1 focus:ring-wiz-blue/20 rounded-lg text-xs text-cloudy-white outline-none transition-colors appearance-none cursor-pointer"
+      >
+        <option value="" className="bg-serious-blue text-cloudy-white">
+          All Sources
+        </option>
+        {SOURCES.map(({ value, label }) => (
+          <option key={value} value={value} className="bg-serious-blue">
+            {label}
+          </option>
+        ))}
+      </select>
+
+      {/* Phase 4.2: Verified toggle (default on) */}
+      <button
+        onClick={toggleVerified}
+        aria-pressed={initialVerified === "true"}
+        className={clsx(
+          "px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide transition-all border flex items-center gap-1.5",
+          initialVerified === "true"
+            ? "bg-emerald-600/30 border-emerald-500 text-emerald-400"
+            : "bg-blue-shadow/20 border-blue-shadow/60 text-sky-blue/70 hover:border-sky-blue hover:text-cloudy-white",
+        )}
+        title="Show only actors verified across multiple sources"
+      >
+        <svg
+          className={clsx("w-3.5 h-3.5", initialVerified === "true" && "fill-current")}
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="none"
+        >
+          <path
+            d="M10 2L3 7V11C3 14.8665 6.13401 18 10 18C13.866 18 17 14.8665 17 11V7L10 2Z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M7 10L9 12L13 8"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={initialVerified === "true" ? "block" : "hidden"}
+          />
+        </svg>
+        Verified
+      </button>
+
+      {/* Rarity select */}
+      <select
+        value={initialRarity}
+        onChange={(e) => updateParam("rarity", e.target.value)}
+        aria-label="Filter by rarity"
+        className="px-3 py-1.5 bg-blue-shadow/20 border border-blue-shadow hover:border-sky-blue/50 focus:border-wiz-blue focus:ring-1 focus:ring-wiz-blue/20 rounded-lg text-xs text-cloudy-white outline-none transition-colors appearance-none cursor-pointer"
+        style={{
+          color: initialRarity
+            ? RARITIES.find((r) => r.value === initialRarity)?.color ??
+              "#FFFFFF"
+            : undefined,
+        }}
+      >
+        <option value="" className="bg-serious-blue text-cloudy-white">
+          All Rarities
+        </option>
+        {RARITIES.map(({ value, label, color }) => (
+          <option
+            key={value}
+            value={value}
+            className="bg-serious-blue"
+            style={{ color }}
+          >
+            {label}
+          </option>
+        ))}
+      </select>
+
+      {/* Clear filters */}
+      {hasActiveFilters && (
+        <button
+          onClick={clearAll}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-pink-shadow hover:text-vibrant-pink border border-pink-shadow/40 hover:border-vibrant-pink/60 rounded-lg transition-colors"
+          aria-label="Clear all filters"
+        >
+          <X className="w-3 h-3" />
+          Clear
+        </button>
       )}
     </div>
-  )
+  );
 }

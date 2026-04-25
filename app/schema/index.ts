@@ -86,7 +86,13 @@ export const ThreatActorSchema = z.object({
   imagePrompt: z.string().optional(),
   sources: z.array(SourceAttributionSchema),
   tlp: TLPSchema,
+  // After migration 003: intel_last_updated replaces last_updated
+  // We keep lastUpdated for compatibility with existing code
   lastUpdated: z.string().datetime(),
+  // New fields (optional for backward compatibility)
+  intelLastUpdated: z.string().datetime().optional(),
+  mediaLastUpdated: z.string().datetime().optional(),
+  imageCurated: z.boolean().optional(),
 })
 
 // ---------------------------------------------------------------------------

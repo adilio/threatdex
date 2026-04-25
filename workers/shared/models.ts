@@ -52,6 +52,9 @@ export interface ThreatActorData {
 
 /**
  * Convert camelCase actor data to snake_case for Supabase.
+ *
+ * Note: After migration 003, we write to intel_last_updated instead of last_updated.
+ * The last_updated column is now a computed field in the actors_with_freshness view.
  */
 export function toDbRecord(actor: ThreatActorData): Record<string, unknown> {
   return {
@@ -91,6 +94,6 @@ export function toDbRecord(actor: ThreatActorData): Record<string, unknown> {
       url: s.url ?? null,
     })),
     tlp: actor.tlp,
-    last_updated: actor.lastUpdated,
+    intel_last_updated: actor.lastUpdated,
   }
 }

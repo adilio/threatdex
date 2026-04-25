@@ -6,7 +6,6 @@
 [![Data: TLP:WHITE](https://img.shields.io/badge/Data-TLP%3AWHITE-white.svg)](https://www.cisa.gov/tlp)
 [![Sources: MITRE ATT&CK](https://img.shields.io/badge/Source-MITRE%20ATT%26CK-red.svg)](https://attack.mitre.org)
 [![Sources: ETDA](https://img.shields.io/badge/Source-ETDA-orange.svg)](https://apt.etda.or.th)
-[![Sources: AlienVault OTX](https://img.shields.io/badge/Source-AlienVault%20OTX-green.svg)](https://otx.alienvault.com)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 ThreatDex turns dry APT intelligence into interactive trading cards — making threat actor research faster, more visual, and actually kind of fun. Browse, filter, and collect intelligence on the world's most dangerous cyber threat actors, sourced nightly from MITRE ATT&CK, ETDA, AlienVault OTX, and more.
@@ -27,13 +26,13 @@ ThreatDex turns dry APT intelligence into interactive trading cards — making t
 
 ## 🗂️ Data Sources
 
-| Source                                           | Type            | Entities                          | Update Frequency | Status    |
-|--------------------------------------------------|-----------------|-----------------------------------|------------------|-----------|
-| [MITRE ATT&CK](https://attack.mitre.org)         | STIX bundle     | Groups, TTPs, Software, Campaigns | Nightly          | ✅ Live   |
-| [ETDA Threat Group Cards](https://apt.etda.or.th)| Scraper         | Aliases, Origins, Operations      | Nightly          | ✅ Live   |
-| [AlienVault OTX](https://otx.alienvault.com)     | REST API        | IOCs, Pulses, Campaigns           | Nightly          | ✅ Live   |
-| [MISP](https://www.misp-project.org)             | REST API        | Threat Actors, Attributes         | On demand        | 🔜 Planned |
-| [OpenCTI](https://www.opencti.io)                | GraphQL API     | Actors, Relations, TTPs           | On demand        | 🔜 Planned |
+| Source                                           | Type            | Entities                          | Update Frequency |
+|--------------------------------------------------|-----------------|-----------------------------------|------------------|
+| [MITRE ATT&CK](https://attack.mitre.org)         | STIX bundle     | Groups, TTPs, Software, Campaigns | Nightly          |
+| [ETDA Threat Group Cards](https://apt.etda.or.th)| Scraper         | Aliases, Origins, Operations      | Nightly          |
+| [AlienVault OTX](https://otx.alienvault.com)     | REST API        | IOCs, Pulses, Campaigns           | Nightly          |
+| [MISP](https://www.misp-project.org)             | REST API        | Threat Actors, Attributes         | On demand        |
+| [OpenCTI](https://www.opencti.io)                | GraphQL API     | Actors, Relations, TTPs           | On demand        |
 
 All data is **TLP:WHITE**. Attribution is approximate and for educational purposes only.
 
@@ -51,7 +50,7 @@ All data is **TLP:WHITE**. Attribution is approximate and for educational purpos
 
 ```bash
 # Clone the repo
-git clone https://github.com/adilio/threatdex.git
+git clone https://github.com/threatdex/threatdex.git
 cd threatdex
 
 # Install dependencies
@@ -67,10 +66,10 @@ pnpm dev
 open http://localhost:5173
 ```
 
-Apply the database schema by running `db/schema.sql` against your Supabase project via the SQL editor, or with psql:
+Apply the database schema by running the migrations in `supabase/migrations/` against your Supabase project, or use the Supabase CLI:
 
 ```bash
-psql $DATABASE_URL -f db/schema.sql
+supabase db push
 ```
 
 ### Seed with real data
@@ -108,8 +107,8 @@ threatdex/
 │   ├── otx-sync.ts    # AlienVault OTX connector
 │   ├── image-gen.ts   # AI hero image generation
 │   └── shared/        # Shared utilities (dedup, rarity, models, Supabase client)
-├── db/
-│   └── schema.sql     # PostgreSQL schema, RLS policies, and seed data
+├── supabase/
+│   └── migrations/    # PostgreSQL schema + RLS policies
 ├── tests/             # Vitest unit tests + Playwright e2e tests
 └── docs/              # Architecture, API reference, data sources
 ```
@@ -137,7 +136,7 @@ SUPABASE_SERVICE_KEY=eyJ...       # Private, server-side + workers only
 
 # Optional — enables enrichment from these sources
 OTX_API_KEY=              # AlienVault OTX
-STABLE_HORDE_API_KEY=     # Optional — higher queue priority (free at stablehorde.net)
+OPENAI_API_KEY=           # AI hero image generation
 MISP_URL=                 # Your MISP instance
 MISP_API_KEY=
 OPENCTI_URL=              # Your OpenCTI instance
@@ -155,7 +154,7 @@ Contributions are very welcome. The best places to start:
 - **Add a data source connector** — see <CONTRIBUTING.md> for the connector template
 - **Improve card data** — spot an error or missing alias? Open a PR
 - **Frontend polish** — new filter types, card animations, export formats
-- **Good first issues** — tagged [`good first issue`](https://github.com/adilio/threatdex/issues?q=is%3Aissue+label%3A%22good+first+issue%22) in the issue tracker
+- **Good first issues** — tagged [`good first issue`](https://github.com/threatdex/threatdex/issues?q=is%3Aissue+label%3A%22good+first+issue%22) in the issue tracker
 
 Please read <CONTRIBUTING.md> and <SECURITY.md> before submitting.
 
@@ -180,5 +179,6 @@ CTI data belongs to its respective upstream sources — MITRE ATT&CK, ETDA, Alie
 -----
 
 <p align="center">
-  <a href="https://github.com/adilio/threatdex">View on GitHub</a> · Made with 💜 in 🇨🇦 by <a href="https://github.com/adilio">Adil Leghari</a>
+  Built with ♥ for the security community<br/>
+  <a href="https://threatdex.io">threatdex.io</a> · <a href="https://twitter.com/threatdex">@threatdex</a>
 </p>

@@ -11,10 +11,9 @@
  *   npx tsx workers/mitre-sync.ts
  */
 
-import { supabase, logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
-import { findMatchingActor, mergeActors } from "./shared/dedup.js"
+import { logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
+import { upsertActorPreservingMedia } from "./shared/upsert.js"
 import { computeThreatLevel, computeRarity } from "./shared/rarity.js"
-import { toDbRecord } from "./shared/models.js"
 import type { ThreatActorData, TTPUsage, Campaign, SourceAttribution } from "./shared/models.js"
 
 // ---------------------------------------------------------------------------
@@ -45,16 +44,6 @@ const MOTIVATION_MAP: Record<string, string> = {
   military: "military",
 }
 
-const SOPHISTICATION_MAP: Record<string, string> = {
-  none: "Low",
-  minimal: "Low",
-  intermediate: "Medium",
-  advanced: "High",
-  expert: "Very High",
-  innovator: "Nation-State Elite",
-  strategic: "Nation-State Elite",
-}
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -79,11 +68,6 @@ function mapMotivation(rawValues: string[]): string[] {
     }
   }
   return result.length > 0 ? result : ["espionage"]
-}
-
-function mapSophistication(raw: string | null | undefined): string {
-  if (!raw) return "High"
-  return SOPHISTICATION_MAP[raw.toLowerCase().trim()] ?? "High"
 }
 
 function extractMitreId(
@@ -118,7 +102,7 @@ function extractYear(stixTimestamp: string | null | undefined): string | undefin
 function inferCountryFromLabels(
   labels: string[],
   description: string
-): [string | undefined, string | undefined] {
+): [string | undefined, string | undefined, boolean] {
   const countryHints: Record<string, [string, string]> = {
     russia: ["Russia", "RU"],
     russian: ["Russia", "RU"],
@@ -139,14 +123,45 @@ function inferCountryFromLabels(
     "united states": ["United States", "US"],
     "united kingdom": ["United Kingdom", "GB"],
   }
+  // Countries that indicate state sponsorship
+  const stateSponsoredCountries = new Set([
+    "russia", "russian",
+    "china", "chinese",
+    "iran", "iranian",
+    "north korea", "dprk",
+    "united states", "united kingdom", "israel"
+  ])
+
   const textToSearch =
     labels.join(" ").toLowerCase() + " " + description.toLowerCase()
   for (const [hint, [country, code]] of Object.entries(countryHints)) {
     if (textToSearch.includes(hint)) {
-      return [country, code]
+      const isStateSponsored = stateSponsoredCountries.has(hint) ||
+                               labels.includes("state-sponsored") ||
+                               /nation-state|state.sponsored/i.test(description)
+      return [country, code, isStateSponsored]
     }
   }
-  return [undefined, undefined]
+  return [undefined, undefined, labels.includes("state-sponsored") || /nation-state|state.sponsored/i.test(description)]
+}
+
+/**
+ * Derive sophistication from observable signals.
+ * MITRE intrusion-sets don't have an explicit sophistication field.
+ */
+function deriveSophistication(params: {
+  ttpsCount: number
+  campaignsCount: number
+  toolsCount: number
+  isStateSponsored: boolean
+}): string {
+  const { ttpsCount, campaignsCount, toolsCount, isStateSponsored } = params
+  const score = ttpsCount + campaignsCount * 2 + toolsCount * 0.5 + (isStateSponsored ? 10 : 0)
+  if (score >= 30 && isStateSponsored) return "Nation-State Elite"
+  if (score >= 20) return "Very High"
+  if (score >= 10) return "High"
+  if (score >= 4) return "Medium"
+  return "Low"
 }
 
 // ---------------------------------------------------------------------------
@@ -218,9 +233,10 @@ function parseIntrusionSet(
   const mitreId = extractMitreId(externalRefs)
   const mitreUrl = extractMitreUrl(externalRefs)
 
-  const sophisticationRaw: string | undefined =
-    obj["x_mitre_version"] ?? obj["sophistication"] ?? undefined
-  const sophistication = mapSophistication(sophisticationRaw)
+  // We'll derive sophistication from signals after collecting TTPs/tools/campaigns
+  // Store raw labels/description for state-sponsorship detection
+  const rawLabels = labels
+  const rawDescription = description
 
   const rawMotivations: string[] =
     obj["x_mitre_motivation_types"] ??
@@ -232,9 +248,7 @@ function parseIntrusionSet(
   const lastSeen = extractYear(obj["last_seen"] ?? obj["modified"])
 
   const sectors: string[] = obj["x_mitre_sectors"] ?? []
-  const [country, countryCode] = inferCountryFromLabels(labels, description)
-
-  // TTPs: "uses" relationships where target is attack-pattern
+  const [country, countryCode, isStateSponsored] = inferCountryFromLabels(rawLabels, rawDescription)
   const ttps: TTPUsage[] = []
   for (const rel of relsBySource.get(stixId) ?? []) {
     if (rel["relationship_type"] !== "uses") continue
@@ -289,6 +303,14 @@ function parseIntrusionSet(
       description: srcObj["description"] ?? "",
     })
   }
+
+  // Derive sophistication from observable signals
+  const sophistication = deriveSophistication({
+    ttpsCount: ttps.length,
+    campaignsCount: campaigns.length,
+    toolsCount: tools.length,
+    isStateSponsored,
+  })
 
   const threatLevel = computeThreatLevel({
     sophistication,
@@ -357,31 +379,13 @@ async function main(): Promise<void> {
 
     for (const obj of intrusionSets) {
       try {
-        let actor = parseIntrusionSet(obj, byId, relsBySource, relsByTarget)
+        const actor = parseIntrusionSet(obj, byId, relsBySource, relsByTarget)
 
-        const existingId = await findMatchingActor(actor)
-        if (existingId && existingId !== actor.id) {
-          const { data: existingRow } = await supabase
-            .from("actors")
-            .select("*")
-            .eq("id", existingId)
-            .single()
-          if (existingRow) {
-            actor = mergeActors(
-              existingRow as Record<string, unknown>,
-              actor
-            )
-          }
-        }
-
-        const { error } = await supabase
-          .from("actors")
-          .upsert(toDbRecord(actor), { onConflict: "id" })
-
-        if (error) {
+        const result = await upsertActorPreservingMedia(actor)
+        if (result.error) {
           console.warn(
-            `Supabase upsert error for ${actor.canonicalName}:`,
-            error.message
+            `Upsert error for ${actor.canonicalName}:`,
+            result.error
           )
         } else {
           recordsSynced++
