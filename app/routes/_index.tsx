@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router"
 import { useLoaderData } from "react-router"
 import { supabase } from "~/lib/supabase.server"
+import { mapToActor } from "~/lib/actor-mapper"
 import { ThreatActorCard } from "~/components/ThreatActorCard"
 import { SearchBar } from "~/components/SearchBar"
 import { FilterPanel } from "~/components/FilterPanel"
@@ -22,35 +23,6 @@ export const meta: MetaFunction = () => [
   },
 ]
 
-function mapToActor(row: Record<string, unknown>): ThreatActor {
-  return {
-    id: row.id as string,
-    canonicalName: row.canonical_name as string,
-    aliases: (row.aliases as string[]) ?? [],
-    mitreId: (row.mitre_id as string | undefined) ?? undefined,
-    country: (row.country as string | undefined) ?? undefined,
-    countryCode: (row.country_code as string | undefined) ?? undefined,
-    motivation: (row.motivation as ThreatActor["motivation"]) ?? [],
-    threatLevel: row.threat_level as number,
-    sophistication: row.sophistication as ThreatActor["sophistication"],
-    firstSeen: (row.first_seen as string | undefined) ?? undefined,
-    lastSeen: (row.last_seen as string | undefined) ?? undefined,
-    sectors: (row.sectors as string[]) ?? [],
-    geographies: (row.geographies as string[]) ?? [],
-    tools: (row.tools as string[]) ?? [],
-    ttps: (row.ttps as ThreatActor["ttps"]) ?? [],
-    campaigns: (row.campaigns as ThreatActor["campaigns"]) ?? [],
-    description: row.description as string,
-    tagline: (row.tagline as string | undefined) ?? undefined,
-    rarity: row.rarity as ThreatActor["rarity"],
-    imageUrl: (row.image_url as string | undefined) ?? undefined,
-    imagePrompt: (row.image_prompt as string | undefined) ?? undefined,
-    sources: (row.sources as ThreatActor["sources"]) ?? [],
-    tlp: (row.tlp as ThreatActor["tlp"]) ?? "WHITE",
-    lastUpdated: row.last_updated as string,
-  }
-}
-
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url)
   const search = url.searchParams.get("q") ?? ""
@@ -58,8 +30,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const motivation = url.searchParams.get("motivation") ?? ""
   const rarity = url.searchParams.get("rarity") ?? ""
   const source = url.searchParams.get("source") ?? ""
-  // Phase 4.2: Verified filter (default true, only false disables it)
-  const verified = url.searchParams.get("verified") ?? "true"
+  const verified = url.searchParams.get("verified") ?? "false"
   const offset = parseInt(url.searchParams.get("offset") ?? "0", 10)
 
   // Phase 4.3: Use ranked RPC for better default sort when not searching
@@ -181,7 +152,7 @@ export default function HomePage() {
           initialMotivation={searchParams.motivation ?? ""}
           initialRarity={searchParams.rarity ?? ""}
           initialSource={searchParams.source ?? ""}
-          initialVerified={searchParams.verified ?? "true"}
+          initialVerified={searchParams.verified ?? "false"}
         />
       </section>
 

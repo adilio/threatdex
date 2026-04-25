@@ -1,6 +1,7 @@
 # ThreatDex Improvement Plan
 
-**Status:** Phases 0-5 complete and deployed. Everything below the
+**Status:** Phases 0-5 complete and deployed. Post-deploy issues O1-O4 are
+now resolved in code as of 2026-04-25. Everything below the
 "Archived — original plan" divider is preserved for reference but no longer
 active work.
 
@@ -15,17 +16,24 @@ active work.
 These were uncovered after Phase 5 shipped. They are not covered by the
 original phase plan.
 
-### O1. `/actors/:id` returns HTTP 500 in production
+### O1. `/actors/:id` returns HTTP 500 in production — resolved
 
 `https://threatdex.netlify.app/actors/sandworm` (and presumably every other
 actor detail URL) errors out. The "View Details" link rendered on every card
 in the home grid is a dead link. **Highest priority** — it's a live broken
 flow on the deployed site.
 
-Files to investigate: `app/routes/actors.$id.tsx`, the loader and any RPC it
-calls. Check Netlify function logs for the SSR error.
+Resolution notes, 2026-04-25:
 
-### O2. Card-back UX is information-poor by construction
+- Confirmed the live Supabase row for `sandworm` exists.
+- Centralized actor row mapping in `app/lib/actor-mapper.ts`, including
+  snake_case JSON normalization for `sources` and `ttps`.
+- Fixed the stale `pnpm start` server bundle path from
+  `build/server/index.js` to `build/server/server-build.js`.
+- Verified the production build serves `/actors/sandworm` locally with HTTP
+  200.
+
+### O2. Card-back UX is information-poor by construction — resolved
 
 `CardBack.tsx` is hard-pinned to 280×392 px (lines 170-171) and consequently
 truncates everything: first 5 TTPs, 3 campaigns, 8 tools, 3 sectors, 3
@@ -33,39 +41,59 @@ geographies, then `+N more` rollup counters (CardBack.tsx:159-163). At 7-9px
 monospace, even the visible items are barely scannable. So flipping the card
 shows the user a worse summary than the front, not a fuller view.
 
-**Intended UX (user request):** on flip, the card should expand to fill the
-viewport so the back becomes fully readable. Implementation sketch:
+Resolution notes, 2026-04-25:
 
-- Animate the card into a centered modal at ~90vw / 90vh with a backdrop.
-- Keep the existing 3D `rotateY` animation in `ThreatActorCard.tsx:77-79` —
-  add scale + position transitions alongside it.
-- Render an expanded `CardBack` variant that drops the truncation and shows
-  full TTP list grouped by tactic, all campaigns with descriptions, full
-  tool/sector/geography lists, and source citations with URLs.
-- Dismiss on Esc, backdrop click, or a second click on the card.
-- Decide whether this fullscreen back replaces the `/actors/:id` detail page
-  or coexists. Both is redundant.
+- Added a fullscreen modal flip path in `ThreatActorCard.tsx` with backdrop,
+  scale + rotate animation, Esc dismissal, backdrop dismissal, and second-card
+  click dismissal.
+- Added an expanded `CardBack` mode that uses ~90vw / 90vh, scrolls, drops the
+  teaser truncation, groups all TTPs by tactic, shows all campaigns with full
+  descriptions, and exposes all source citations with URLs.
+- The `/actors/:id` detail page still coexists for shareable URLs and SEO.
 
-### O3. Dead/duplicate card component
+### O3. Dead/duplicate card component — already complete before this pass
 
 `app/components/ActorCard.tsx` exists with a more elaborate flip + download +
 "View Details" UI, but nothing imports it. The home page renders
 `ThreatActorCard.tsx`. Pick one and delete the other before adding the
 fullscreen-flip work in O2.
 
-### O4. "Verified" filter is on by default and invisible
+Resolution notes, 2026-04-25:
+
+- Re-checked `app/`; `app/components/ActorCard.tsx` no longer exists.
+- `ThreatActorCard.tsx` is the only card wrapper imported by routes.
+
+### O4. "Verified" filter is on by default and invisible — resolved
 
 `app/routes/_index.tsx:62` defaults `verified=true`, which hides any actor
 with fewer than 2 sources. The header reads "Showing 1–20 of 673 actors" but
 that 673 is the filtered total — users don't see the unfiltered count
 anywhere. Either show "filtered: X of Y" or default the toggle off.
 
+Resolution notes, 2026-04-25:
+
+- Defaulted the verified filter off in `app/routes/_index.tsx` and
+  `app/components/FilterPanel.tsx`.
+- Clear filters now also removes any explicit `verified` query param.
+
+### Netlify deploy failure — resolved
+
+The deploy failed before build because the committed lockfile contained stale
+workspace/Next.js entries and Netlify was pinned to Node 20 while
+`package.json` requires Node >=24.
+
+Resolution notes, 2026-04-25:
+
+- Rebuilt `pnpm-lock.yaml` without stale `apps/web`, `packages/*`, or
+  `next@14.1.0` entries.
+- Added `.nvmrc` with Node 24.
+- Updated `netlify.toml` to use `NODE_VERSION = "24"`.
+- Committed and pushed this deployment-only fix to `main` as `835aef5`.
+
 ## Recommended order
 
-1. **Fix the `/actors/:id` 500** (O1) — smallest scope, breaking links live.
-2. **Build flip-to-fullscreen card back** (O2) — the largest piece of work.
-3. **Cleanup**: remove the dead `ActorCard.tsx` (O3), reconsider the verified
-   default (O4).
+All recommended post-deploy work is complete in code. Next step: redeploy
+Netlify and spot-check the live site after the latest commits land.
 
 ---
 

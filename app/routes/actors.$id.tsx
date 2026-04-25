@@ -1,38 +1,10 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router"
 import { useLoaderData, Link } from "react-router"
 import { supabase } from "~/lib/supabase.server"
+import { mapToActor } from "~/lib/actor-mapper"
 import { ThreatActorCard } from "~/components/ThreatActorCard"
 import { getRarityColor } from "~/schema"
 import type { ThreatActor } from "~/schema"
-
-function mapToActor(row: Record<string, unknown>): ThreatActor {
-  return {
-    id: row.id as string,
-    canonicalName: row.canonical_name as string,
-    aliases: (row.aliases as string[]) ?? [],
-    mitreId: (row.mitre_id as string | undefined) ?? undefined,
-    country: (row.country as string | undefined) ?? undefined,
-    countryCode: (row.country_code as string | undefined) ?? undefined,
-    motivation: (row.motivation as ThreatActor["motivation"]) ?? [],
-    threatLevel: row.threat_level as number,
-    sophistication: row.sophistication as ThreatActor["sophistication"],
-    firstSeen: (row.first_seen as string | undefined) ?? undefined,
-    lastSeen: (row.last_seen as string | undefined) ?? undefined,
-    sectors: (row.sectors as string[]) ?? [],
-    geographies: (row.geographies as string[]) ?? [],
-    tools: (row.tools as string[]) ?? [],
-    ttps: (row.ttps as ThreatActor["ttps"]) ?? [],
-    campaigns: (row.campaigns as ThreatActor["campaigns"]) ?? [],
-    description: row.description as string,
-    tagline: (row.tagline as string | undefined) ?? undefined,
-    rarity: row.rarity as ThreatActor["rarity"],
-    imageUrl: (row.image_url as string | undefined) ?? undefined,
-    imagePrompt: (row.image_prompt as string | undefined) ?? undefined,
-    sources: (row.sources as ThreatActor["sources"]) ?? [],
-    tlp: (row.tlp as ThreatActor["tlp"]) ?? "WHITE",
-    lastUpdated: row.last_updated as string,
-  }
-}
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { data, error } = await supabase

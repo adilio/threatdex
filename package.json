@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "react-router dev",
     "build": "react-router build",
-    "start": "react-router-serve ./build/server/index.js",
+    "start": "react-router-serve ./build/server/server-build.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint app workers --ext .ts,.tsx",
     "test": "vitest run",

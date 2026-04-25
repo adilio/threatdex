@@ -5,6 +5,7 @@ import { getRarityColor } from "~/schema"
 interface CardBackProps {
   actor: ThreatActor
   className?: string
+  expanded?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -155,20 +156,26 @@ function SourceLabel({ source }: { source: string }) {
 // CardBack
 // ---------------------------------------------------------------------------
 
-export function CardBack({ actor, className }: CardBackProps) {
-  const displayTTPs = actor.ttps.slice(0, 5)
-  const displayCampaigns = actor.campaigns.slice(0, 3)
-  const displayTools = actor.tools.slice(0, 8)
-  const displaySectors = actor.sectors.slice(0, 3)
-  const displayGeos = actor.geographies.slice(0, 3)
+export function CardBack({ actor, className, expanded = false }: CardBackProps) {
+  const displayTTPs = expanded ? actor.ttps : actor.ttps.slice(0, 5)
+  const displayCampaigns = expanded ? actor.campaigns : actor.campaigns.slice(0, 3)
+  const displayTools = expanded ? actor.tools : actor.tools.slice(0, 8)
+  const displaySectors = expanded ? actor.sectors : actor.sectors.slice(0, 3)
+  const displayGeos = expanded ? actor.geographies : actor.geographies.slice(0, 3)
   const uniqueSources = Array.from(new Set(actor.sources.map((s) => s.source)))
+  const ttpsByTactic = displayTTPs.reduce<Record<string, typeof displayTTPs>>((acc, ttp) => {
+    const tactic = ttp.tactic || "Unknown"
+    acc[tactic] = acc[tactic] ?? []
+    acc[tactic].push(ttp)
+    return acc
+  }, {})
 
   return (
     <div
       className={className}
       style={{
-        width: "280px",
-        height: "392px",
+        width: expanded ? "min(920px, 90vw)" : "280px",
+        height: expanded ? "min(820px, 90vh)" : "392px",
         borderRadius: "12px",
         background: "linear-gradient(160deg, #01123F 0%, #0a1a4a 100%)",
         display: "flex",
@@ -226,38 +233,70 @@ export function CardBack({ actor, className }: CardBackProps) {
       <div
         style={{
           flex: 1,
-          padding: "8px 10px",
+          padding: expanded ? "18px 20px" : "8px 10px",
           display: "flex",
           flexDirection: "column",
-          gap: "8px",
-          overflow: "hidden",
+          gap: expanded ? "16px" : "8px",
+          overflow: expanded ? "auto" : "hidden",
         }}
       >
         {/* TTPs */}
         {displayTTPs.length > 0 && (
           <div>
             <SectionHeader title="Techniques & Tactics" icon="⚔" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-              {displayTTPs.map((ttp, idx) => (
-                <TTPChip
-                  key={ttp.techniqueId || `ttp-${idx}`}
-                  techniqueId={ttp.techniqueId || "N/A"}
-                  tactic={ttp.tactic || "Unknown"}
-                />
-              ))}
-              {actor.ttps.length > 5 && (
-                <span
-                  style={{
-                    fontFamily: "monospace",
-                    fontSize: "8px",
-                    color: "#6197FF",
-                    alignSelf: "center",
-                  }}
-                >
-                  +{actor.ttps.length - 5} more
-                </span>
-              )}
-            </div>
+            {expanded ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
+                {Object.entries(ttpsByTactic).map(([tactic, entries]) => (
+                  <div
+                    key={tactic}
+                    style={{
+                      background: "rgba(23,58,170,0.18)",
+                      border: "1px solid rgba(97,151,255,0.18)",
+                      borderRadius: "8px",
+                      padding: "10px",
+                    }}
+                  >
+                    <div style={{ fontFamily: "monospace", fontSize: "10px", color: "#97BBFF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
+                      {tactic}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {entries.map((ttp, idx) => (
+                        <div key={ttp.techniqueId || `ttp-${idx}`} style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
+                          <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#FFBFFF", fontWeight: 700, minWidth: "70px" }}>
+                            {ttp.techniqueId || "N/A"}
+                          </span>
+                          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.72)", lineHeight: 1.35 }}>
+                            {ttp.techniqueName || "Unknown technique"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                {displayTTPs.map((ttp, idx) => (
+                  <TTPChip
+                    key={ttp.techniqueId || `ttp-${idx}`}
+                    techniqueId={ttp.techniqueId || "N/A"}
+                    tactic={ttp.tactic || "Unknown"}
+                  />
+                ))}
+                {actor.ttps.length > 5 && (
+                  <span
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "8px",
+                      color: "#6197FF",
+                      alignSelf: "center",
+                    }}
+                  >
+                    +{actor.ttps.length - 5} more
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -313,10 +352,10 @@ export function CardBack({ actor, className }: CardBackProps) {
                       fontSize: "8px",
                       color: "rgba(255,255,255,0.55)",
                       lineHeight: 1.4,
-                      overflow: "hidden",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
+                      overflow: expanded ? undefined : "hidden",
+                      display: expanded ? undefined : "-webkit-box",
+                      WebkitLineClamp: expanded ? undefined : 2,
+                      WebkitBoxOrient: expanded ? undefined : "vertical",
                     }}
                   >
                     {campaign.description}
@@ -451,9 +490,28 @@ export function CardBack({ actor, className }: CardBackProps) {
         >
           Sources:
         </span>
-        {uniqueSources.map((src) => (
-          <SourceLabel key={src} source={src} />
-        ))}
+        {expanded
+          ? actor.sources.map((src, idx) => (
+              <a
+                key={`${src.source}-${src.sourceId ?? idx}`}
+                href={src.url ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                style={{
+                  color: "#97BBFF",
+                  fontFamily: "monospace",
+                  fontSize: "10px",
+                  textDecoration: src.url ? "underline" : "none",
+                }}
+              >
+                {src.source.toUpperCase()}
+                {src.sourceId ? `:${src.sourceId}` : ""}
+              </a>
+            ))
+          : uniqueSources.map((src) => (
+              <SourceLabel key={src} source={src} />
+            ))}
       </div>
 
       {/* Rarity-colored bottom accent line */}

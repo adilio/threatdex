@@ -41,7 +41,7 @@ export function FilterPanel({
   initialMotivation = "",
   initialRarity = "",
   initialSource = "",
-  initialVerified = "true",
+  initialVerified = "false",
   className,
 }: FilterPanelProps) {
   const navigate = useNavigate();
@@ -84,7 +84,7 @@ export function FilterPanel({
     params.delete("rarity");
     params.delete("source");
     params.delete("offset");
-    // Don't clear verified - it has a default
+    params.delete("verified");
     navigate(`?${params.toString()}`);
   }, [navigate, searchParams]);
 
@@ -159,7 +159,7 @@ export function FilterPanel({
         ))}
       </select>
 
-      {/* Phase 4.2: Verified toggle (default on) */}
+      {/* Phase 4.2: Verified toggle */}
       <button
         onClick={toggleVerified}
         aria-pressed={initialVerified === "true"}
