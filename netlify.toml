@@ -5,12 +5,8 @@
 [build.environment]
   NODE_VERSION = "20"
 
-[functions]
-  node_bundler = "esbuild"
-  included_files = ["build/server/**"]
-
+# React Router SSR - Netlify will serve static files first
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/react-router-server"
   status = 200
-  force = true
