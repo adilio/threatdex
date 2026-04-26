@@ -14,6 +14,11 @@
 import { logSyncStart, logSyncComplete, logSyncError } from "./shared/supabase.js"
 import { upsertActorPreservingMedia } from "./shared/upsert.js"
 import { computeThreatLevel, computeRarity } from "./shared/rarity.js"
+import {
+  cleanPulseName,
+  extractActorCandidate,
+  looksLikeActorName,
+} from "./shared/otx-filter.js"
 import type { ThreatActorData, TTPUsage, Campaign, SourceAttribution } from "./shared/models.js"
 
 // ---------------------------------------------------------------------------
@@ -21,10 +26,6 @@ import type { ThreatActorData, TTPUsage, Campaign, SourceAttribution } from "./s
 // ---------------------------------------------------------------------------
 
 const OTX_API_KEY = process.env.OTX_API_KEY
-if (!OTX_API_KEY) {
-  console.log("OTX_API_KEY not set — skipping OTX sync")
-  process.exit(0)
-}
 
 const OTX_API_BASE = "https://otx.alienvault.com/api/v1"
 const OTX_PULSE_ENDPOINT = `${OTX_API_BASE}/pulses/subscribed`
@@ -37,12 +38,6 @@ const THREAT_ACTOR_TAGS = new Set([
   "intrusion-set",
   "nation-state",
 ])
-
-// Regex for actor name patterns - APT numbers, TA numbers, and proper names
-const ACTOR_NAME_RE = /^(?:apt[\s-]?\d+|ta\d+|fin\d+|unc\d+|g\d+|[A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+){0,3})$/
-
-// Words that indicate an article title rather than an actor name
-const SENTENCE_WORDS = /\b(the|and|with|by|targeting|inside|using|advisory|chronology|operation|unmasking|fake|new|attack|attacks|expands|targeted|reveals|infects|executed|uncovers|delivers|escalation|implant|implants|backdoor|campaign|variant|techniques|deployed|leverages)\b/i
 
 const PAGE_SIZE = 50
 
@@ -64,56 +59,9 @@ function slugifyActor(name: string): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OtxPulse = Record<string, any>
 
-/**
- * Check if a name looks like a threat actor name (not an article title).
- * Filters out sentence-like titles like "Discovers Multi-Year Sophisticated Chinese DNS Operation".
- */
-function looksLikeActorName(name: string): boolean {
-  const trimmed = name.trim()
-  if (trimmed.length === 0 || trimmed.length > 40) return false
-  const wordCount = trimmed.split(/\s+/).length
-  if (wordCount > 4) return false
-  // Reject sentence-y words
-  if (SENTENCE_WORDS.test(trimmed)) {
-    return false
-  }
-  return ACTOR_NAME_RE.test(trimmed)
-}
-
-/**
- * Extract a candidate actor name from a pulse.
- * First checks tags for known actor aliases, then falls back to title parsing.
- * Returns null if no clean actor name can be extracted.
- */
-function extractActorCandidate(pulse: OtxPulse): string | null {
-  const tags: string[] = (pulse["tags"] ?? []).map((t: string) => t.trim())
-  // First check tags for actor-like names
-  for (const tag of tags) {
-    if (looksLikeActorName(tag)) return tag
-  }
-  // Fall back to a leading proper-noun in the title
-  const name = cleanPulseName(pulse["name"] ?? "")
-  if (looksLikeActorName(name)) return name
-  return null
-}
-
 function isThreatActorPulse(pulse: OtxPulse): boolean {
   const tags: string[] = (pulse["tags"] ?? []).map((t: string) => t.toLowerCase())
   return tags.some((t) => THREAT_ACTOR_TAGS.has(t))
-}
-
-function cleanPulseName(name: string): string {
-  // Remove trailing date / campaign noise
-  name = name.replace(
-    /\s*[-\u2013\u2014:]\s*(campaign|operation|activity|ioc|indicator).*$/i,
-    ""
-  )
-  // Remove leading "Threat Actor:" / "APT Group:" prefixes
-  name = name.replace(
-    /^(threat\s+actor|apt\s+group|group|actor)\s*:\s*/i,
-    ""
-  )
-  return name.trim()
 }
 
 function extractYear(dateStr: string | null | undefined): string | undefined {
@@ -333,6 +281,11 @@ function deriveSophistication(params: {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+  if (!OTX_API_KEY) {
+    console.log("OTX_API_KEY not set — skipping OTX sync")
+    return
+  }
+
   const logId = await logSyncStart("otx")
   let recordsSynced = 0
 
@@ -367,4 +320,8 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(console.error)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error)
+}
+
+export { cleanPulseName, extractActorCandidate, looksLikeActorName, parsePulse }

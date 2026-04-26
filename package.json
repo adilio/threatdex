@@ -20,7 +20,8 @@
     "workers:backup": "tsx workers/backup.ts",
     "workers:cleanup-otx": "tsx workers/cleanup-otx-pollution.ts",
     "workers:diagnose": "tsx workers/diagnose.ts",
-    "workers:all": "pnpm workers:mitre && pnpm workers:etda && pnpm workers:otx"
+    "workers:curated": "tsx workers/curated-sync.ts",
+    "workers:all": "pnpm workers:mitre && pnpm workers:etda && pnpm workers:otx && pnpm workers:curated"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -27,12 +27,18 @@ const SOURCES: { value: string; label: string }[] = [
   { value: "manual", label: "Manual" },
 ];
 
+const SORTS = [
+  { value: "ranked", label: "Ranked" },
+  { value: "current", label: "Current Activity" },
+] as const;
+
 interface FilterPanelProps {
   initialCountry?: string;
   initialMotivation?: string;
   initialRarity?: string;
   initialSource?: string;
   initialVerified?: string;
+  initialSort?: string;
   className?: string;
 }
 
@@ -42,6 +48,7 @@ export function FilterPanel({
   initialRarity = "",
   initialSource = "",
   initialVerified = "false",
+  initialSort = "ranked",
   className,
 }: FilterPanelProps) {
   const navigate = useNavigate();
@@ -83,6 +90,7 @@ export function FilterPanel({
     params.delete("motivation");
     params.delete("rarity");
     params.delete("source");
+    params.delete("sort");
     params.delete("offset");
     params.delete("verified");
     navigate(`?${params.toString()}`);
@@ -92,7 +100,8 @@ export function FilterPanel({
     Boolean(initialCountry) ||
     Boolean(initialMotivation) ||
     Boolean(initialRarity) ||
-    Boolean(initialSource);
+    Boolean(initialSource) ||
+    initialSort !== "ranked";
 
   return (
     <div
@@ -218,6 +227,20 @@ export function FilterPanel({
             style={{ color }}
           >
             {label}
+          </option>
+        ))}
+      </select>
+
+      {/* Sort mode */}
+      <select
+        value={initialSort}
+        onChange={(e) => updateParam("sort", e.target.value === "ranked" ? "" : e.target.value)}
+        aria-label="Sort actors"
+        className="wiz-control px-3 py-1.5 text-xs text-cloudy-white appearance-none cursor-pointer"
+      >
+        {SORTS.map(({ value, label }) => (
+          <option key={value} value={value} className="bg-serious-blue">
+            Sort: {label}
           </option>
         ))}
       </select>

@@ -12,12 +12,12 @@
  */
 
 import { getSupabase } from "./shared/supabase.js"
+import { isLikelyPollutedOtxActorName } from "./shared/otx-filter.js"
 import { parseArgs } from "node:util"
-
-const SENTENCE_RE = /\b(the|and|with|by|targeting|inside|using|advisory|chronology|operation|unmasking|fake|new|attack|attacks|expands|targeted|reveals|infects|executed|uncovers|delivers|escalation|implant|implants|backdoor|campaign|variant|techniques|deployed|leverages)\b/i
 
 async function main() {
   const { values } = parseArgs({
+    args: process.argv.slice(2).filter((arg) => arg !== "--"),
     options: {
       "dry-run": { type: "boolean", default: false },
     },
@@ -40,8 +40,7 @@ async function main() {
     if (sources.length === 0) return false
     // Only delete if ALL sources are OTX (don't delete multi-source actors)
     if (!sources.every((s) => s.source === "otx")) return false
-    const wordCount = (a.canonical_name as string).split(/\s+/).length
-    return wordCount > 4 || SENTENCE_RE.test(a.canonical_name as string)
+    return isLikelyPollutedOtxActorName(a.canonical_name as string)
   })
 
   console.log(`Would delete ${toDelete.length} polluted rows`)

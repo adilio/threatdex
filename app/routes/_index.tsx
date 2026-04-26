@@ -9,10 +9,42 @@ import { WizStar } from "~/components/WizStar"
 import type { ThreatActor } from "~/schema"
 
 const LIMIT = 20
+type SortMode = "ranked" | "current"
 
 // Type for RPC result that includes total_count
 interface ActorWithTotal extends ThreatActor {
   total_count?: number
+}
+
+function sortMode(value: string | null): SortMode {
+  return value === "current" ? "current" : "ranked"
+}
+
+function yearValue(value?: string): number {
+  if (!value) return 0
+  const year = Number.parseInt(value, 10)
+  return Number.isFinite(year) ? year : 0
+}
+
+function currentActivityYear(actor: ThreatActor): number {
+  const campaignYears = actor.campaigns.map((campaign) => yearValue(campaign.year))
+  return Math.max(
+    yearValue(actor.lastSeen),
+    yearValue(actor.firstSeen),
+    ...campaignYears,
+  )
+}
+
+function sortByCurrentActivity(actors: ThreatActor[]): ThreatActor[] {
+  return [...actors].sort((a, b) => {
+    const activityDelta = currentActivityYear(b) - currentActivityYear(a)
+    if (activityDelta !== 0) return activityDelta
+    const intelDelta =
+      new Date(b.intelLastUpdated ?? b.lastUpdated).getTime() -
+      new Date(a.intelLastUpdated ?? a.lastUpdated).getTime()
+    if (intelDelta !== 0) return intelDelta
+    return b.threatLevel - a.threatLevel
+  })
 }
 
 export const meta: MetaFunction = () => [
@@ -32,10 +64,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const rarity = url.searchParams.get("rarity") ?? ""
   const source = url.searchParams.get("source") ?? ""
   const verified = url.searchParams.get("verified") ?? "false"
+  const sort = sortMode(url.searchParams.get("sort"))
   const offset = parseInt(url.searchParams.get("offset") ?? "0", 10)
 
   // Phase 4.3: Use ranked RPC for better default sort when not searching
-  if (!search) {
+  if (!search && sort === "ranked") {
     const { data, error } = await supabase
       .rpc("list_actors_ranked", {
         p_limit: LIMIT,
@@ -57,7 +90,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         total,
         limit: LIMIT,
         offset,
-        searchParams: { q: search, country, motivation, rarity, source, verified },
+        searchParams: { q: search, country, motivation, rarity, source, verified, sort },
       }
     }
   }
@@ -66,21 +99,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
   let query = supabase
     .from("actors")
     .select("*", { count: "exact" })
-    .order("threat_level", { ascending: false })
-    .range(offset, offset + LIMIT - 1)
 
   if (search) {
     // Use Postgres full-text search RPC if available, otherwise ilike
     const { data, count, error } = await supabase
       .rpc("search_actors", { query: search })
-      .range(offset, offset + LIMIT - 1)
     if (error) throw new Response("Failed to load actors", { status: 500 })
+    const actors = ((data ?? []) as Record<string, unknown>[]).map(mapToActor)
+    const sortedActors =
+      sort === "current" ? sortByCurrentActivity(actors) : actors
     return {
-      items: ((data ?? []) as Record<string, unknown>[]).map(mapToActor),
-      total: count ?? 0,
+      items: sortedActors.slice(offset, offset + LIMIT),
+      total: count ?? sortedActors.length,
       limit: LIMIT,
       offset,
-      searchParams: { q: search, country, motivation, rarity, source, verified },
+      searchParams: { q: search, country, motivation, rarity, source, verified, sort },
     }
   }
 
@@ -99,15 +132,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // This is a simplified check - for production, the RPC handles this properly
   }
 
+  if (sort === "ranked") {
+    query = query
+      .order("threat_level", { ascending: false })
+      .range(offset, offset + LIMIT - 1)
+  }
+
   const { data, count, error } = await query
   if (error) throw new Response("Failed to load actors", { status: 500 })
+  const actors = ((data ?? []) as Record<string, unknown>[]).map(mapToActor)
+  const items =
+    sort === "current"
+      ? sortByCurrentActivity(actors).slice(offset, offset + LIMIT)
+      : actors
 
   return {
-    items: ((data ?? []) as Record<string, unknown>[]).map(mapToActor),
-    total: count ?? 0,
+    items,
+    total: count ?? actors.length,
     limit: LIMIT,
     offset,
-    searchParams: { q: search, country, motivation, rarity, source, verified },
+    searchParams: { q: search, country, motivation, rarity, source, verified, sort },
   }
 }
 
@@ -122,6 +166,7 @@ export default function HomePage() {
     ...(searchParams.rarity ? { rarity: searchParams.rarity } : {}),
     ...(searchParams.source ? { source: searchParams.source } : {}),
     ...(searchParams.verified ? { verified: searchParams.verified } : {}),
+    ...(searchParams.sort && searchParams.sort !== "ranked" ? { sort: searchParams.sort } : {}),
     offset: String(offset + limit),
   })
 
@@ -155,6 +200,7 @@ export default function HomePage() {
           initialRarity={searchParams.rarity ?? ""}
           initialSource={searchParams.source ?? ""}
           initialVerified={searchParams.verified ?? "false"}
+          initialSort={searchParams.sort ?? "ranked"}
         />
       </section>
 
