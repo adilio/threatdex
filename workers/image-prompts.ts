@@ -12,11 +12,15 @@ type PromptProfile = {
   environment: string
   rarityAura: string
   countryAccent: string
+  composition: string
+  palette: string
+  signature: string
 }
 
 const VISUAL_CONCEPTS: Record<string, string> = {
   bear: "a massive cybernetic bear with glowing circuit-board fur",
   wolf: "a sleek cybernetic wolf with neon-lit eyes",
+  hound: "a lean cybernetic hound tracking glowing packet trails across the floor",
   fox: "a cunning cybernetic fox wreathed in digital fire",
   snake: "a coiling cybernetic snake made of fiber optic cables",
   viper: "a venomous cybernetic viper dripping neon toxin",
@@ -61,6 +65,35 @@ const VISUAL_CONCEPTS: Record<string, string> = {
   gallium: "a liquid metal entity flowing like molten circuitry",
 }
 
+const FALLBACK_SUBJECTS = [
+  "a faceless glass humanoid assembled from intrusion graphs and fractured endpoint telemetry",
+  "a floating command artifact made of black ceramic plates, fiber optics, and encrypted shards",
+  "a masked signal operator silhouette holding a prism of stolen credentials",
+  "a hovering malware reliquary with rotating sensor arrays and glowing containment rings",
+  "a cybernetic sentinel built from server blades, cracked tablets, and cable tendons",
+  "a spectral reconnaissance drone with layered translucent armor and watchful optics",
+  "a dark crystalline intelligence core unfolding into angular limbs",
+  "a compact intrusion automaton with tool modules orbiting its shoulders",
+] as const
+
+const COMPOSITIONS = [
+  "tight bust portrait, three-quarter turn, strong silhouette, no full-body pose",
+  "low-angle full-body figure, one foreground artifact, large negative space behind",
+  "environment-first scene with the subject emerging from a console reflection",
+  "centered artifact totem with smaller threat silhouette behind it",
+  "asymmetric diagonal composition, subject entering from the left, bright rim light on the right",
+  "top-down command-table composition with the entity rising from mapped network paths",
+] as const
+
+const PALETTES = [
+  "petrol blue, signal cyan, bone white, and small warning-red accents",
+  "charcoal black, oxidized copper, pale green terminal glow, and amber highlights",
+  "deep indigo, cold silver, ultraviolet haze, and sharp cyan edge lights",
+  "graphite gray, desaturated teal, hot magenta sparks, and cream monitor glow",
+  "midnight navy, tarnished gold, smoke violet, and precise ice-blue scan lines",
+  "black glass, muted crimson, dusty orange, and sterile white diagnostic light",
+] as const
+
 const ACTOR_OVERRIDES: Record<string, Partial<PromptProfile>> = {
   sandworm: {
     subject: "a colossal armored sandworm breaking through a frozen electrical substation floor, body made of black circuit plates",
@@ -91,6 +124,86 @@ const ACTOR_OVERRIDES: Record<string, Partial<PromptProfile>> = {
     subject: "a storm giant made of power-grid cables and blue lightning, half-hidden behind cloud walls",
     energy: "quiet pre-positioning against critical infrastructure and electrical disruption",
     environment: "coastal utility control center under heavy rain and emergency lights",
+  },
+  teampcp: {
+    subject: "a cloud supply-chain phantom shaped from container cubes, CI/CD pipeline rails, package-lock fragments, and stolen API keys",
+    energy: "gold theft particles colliding with red sabotage sparks around broken build runners",
+    environment: "cloud control plane war room with Kubernetes nodes, registry vaults, and exposed service dashboards",
+    composition: "wide hero silhouette stepping out of a fractured software pipeline, strong diagonal motion",
+    palette: "black glass, cloud white, hot magenta, container blue, and small hazard-yellow secret tokens",
+    signature: "visible container blocks, package cubes, and build-runner rails; no feline features",
+  },
+  oilrig: {
+    subject: "a rusted industrial drilling rig transformed into a cybernetic espionage tower, with antenna masts and oil-slick cables",
+    energy: "quiet blue surveillance beams mixed with petroleum-black data streams",
+    environment: "desert refinery control room overlooking pumpjacks and pipeline telemetry screens",
+    composition: "towering vertical machine silhouette, viewed from below, no animal anatomy",
+    palette: "sandstone, crude-oil black, oxidized steel, teal monitor glow, and restrained Iranian color accents",
+    signature: "drill head, pipeline valves, refinery gauges, and black oil-slick cabling",
+  },
+  "magic-hound": {
+    subject: "a mythic tracking hound made of Persian mosaic glass, phishing lures, and glowing proxy tunnels",
+    energy: "cold espionage light around decoy news pages, credential hooks, and tunnel endpoints",
+    environment: "moonlit archive courtyard merging into a covert proxy server room",
+    composition: "fast side-profile pursuit pose with packet trails sweeping behind",
+    palette: "lapis blue, desert gold, black velvet, turquoise glass, and faint crimson warning lights",
+    signature: "hound silhouette, mosaic tile armor, and lure documents caught in motion",
+  },
+  patchwork: {
+    subject: "a stitched intelligence cloak assembled from mismatched document fragments, AutoIt scripts, and remote-access modules",
+    energy: "subtle blue espionage threads sewing stolen files into a moving patchwork pattern",
+    environment: "crowded analyst desk with decoy PDFs, regional maps, and tangled laptop cables",
+    composition: "fabric-like figure unfurling across the frame, no insect anatomy",
+    palette: "saffron, deep teal, paper white, charcoal, and cool electric-blue thread",
+    signature: "stitched panels, decoy documents, and patch seams glowing like circuits",
+  },
+  taidoor: {
+    subject: "a sealed black courier capsule unfolding into a minimalist remote-access implant",
+    energy: "thin blue command channels pulsing from a hidden persistence core",
+    environment: "bare operations bench with an isolated workstation and forensic evidence trays",
+    composition: "artifact-first close-up, capsule centered, small humanoid shadow reflected in metal",
+    palette: "matte black, medical white, cool cyan, muted steel, and tiny red status LEDs",
+    signature: "compact implant capsule, evidence labels without readable text, and surgical lighting",
+  },
+  neodymium: {
+    subject: "a rare-earth magnetic specter pulling browser windows, exploit fragments, and memory shards into orbit",
+    energy: "pale violet espionage magnetism bending network lines into a tight spiral",
+    environment: "dark research lab with magnet coils, proxy servers, and suspended glass panels",
+    composition: "circular magnetic vortex composition with the entity at the center",
+    palette: "gunmetal, violet, electric blue, pale nickel, and small Turkish red glints",
+    signature: "magnet rings, metallic dust, and browser exploit shards in orbit",
+  },
+  moafee: {
+    subject: "a quiet poison-ivy vine system crawling through glass server racks, each leaf a tiny surveillance sensor",
+    energy: "low-intensity blue espionage glow hidden under green botanical circuitry",
+    environment: "high-rise data center greenhouse at night with cable trellises and fogged glass",
+    composition: "macro close-up of vines overtaking hardware, entity face barely visible in reflections",
+    palette: "jade green, smoky black, cold cyan, glass gray, and restrained Chinese red accents",
+    signature: "poison ivy leaves, rack cables as vines, and hidden sensor eyes",
+  },
+  apt16: {
+    subject: "a numbered porcelain chess sentinel guarding a stack of media dossiers and beacon implants",
+    energy: "precise blue espionage beams arranged like a strategic board position",
+    environment: "glass media archive with floating broadcast panels and locked file cabinets",
+    composition: "chess-piece silhouette in the foreground, dossier stacks receding into depth",
+    palette: "porcelain white, ink black, neon cyan, lacquer red, and cool newsroom gray",
+    signature: "chessboard geometry, dossier folders, and broadcast-panel reflections",
+  },
+  "scarlet-mimic": {
+    subject: "a red mirror-mask impersonator wearing layered mobile-device screens and copied access badges",
+    energy: "scarlet deception waves mixed with cold blue surveillance pinpoints",
+    environment: "dark mobile forensics lab filled with suspended phone screens and mirrored glass",
+    composition: "mask close-up split by reflections, many small device screens around it",
+    palette: "scarlet red, obsidian, cold cyan, silver mirror, and desaturated jade",
+    signature: "mirror mask, duplicated silhouettes, mobile screens, and fake badge shapes",
+  },
+  applejeus: {
+    subject: "a counterfeit trading terminal blooming into a polished malware idol with cryptocurrency ledgers behind it",
+    energy: "cold North Korean espionage light mixed with gold financial-theft particles",
+    environment: "underground bunker trading desk with market graphs, build artifacts, and sealed vault doors",
+    composition: "terminal-as-totem in front, spectral operator silhouette behind glass",
+    palette: "deep bunker green, black, icy blue, tarnished gold, and restrained red-white-blue origin accents",
+    signature: "trading terminal, crypto ledger fragments, supply-chain build artifacts, and vault door",
   },
 }
 
@@ -133,7 +246,15 @@ function extractVisualConcept(name: string, aliases: string[]): string {
     if (allNames.includes(key)) return concept
   }
 
-  return `a menacing cyber entity inspired by the threat actor ${name}`
+  return FALLBACK_SUBJECTS[stableIndex(name, FALLBACK_SUBJECTS.length)]
+}
+
+function stableIndex(seed: string, modulo: number): number {
+  let hash = 0
+  for (const char of seed) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  }
+  return hash % modulo
 }
 
 function countryAccent(country: string | undefined): string {
@@ -160,6 +281,7 @@ export function buildPromptProfile(actor: Record<string, unknown>): PromptProfil
   const motivations = (actor.motivation as string[] | undefined) ?? ["espionage"]
   const sophistication = (actor.sophistication as string | undefined) ?? "Medium"
   const override = ACTOR_OVERRIDES[id]
+  const seed = `${id}:${name}`
 
   return {
     subject: override?.subject ?? extractVisualConcept(name, aliases),
@@ -167,6 +289,11 @@ export function buildPromptProfile(actor: Record<string, unknown>): PromptProfil
     environment: override?.environment ?? deriveEnvironment(country, sophistication),
     rarityAura: override?.rarityAura ?? RARITY_AURA[rarity] ?? RARITY_AURA.RARE,
     countryAccent: override?.countryAccent ?? countryAccent(country),
+    composition: override?.composition ?? COMPOSITIONS[stableIndex(seed, COMPOSITIONS.length)],
+    palette: override?.palette ?? PALETTES[stableIndex(`${seed}:palette`, PALETTES.length)],
+    signature:
+      override?.signature ??
+      `distinct visual signature derived from the name ${name}; avoid reusing generic cyber creature silhouettes`,
   }
 }
 
@@ -180,10 +307,11 @@ export function buildImagePrompt(actor: Record<string, unknown>): string {
     `Energy and intent: ${p.energy}.`,
     `Origin treatment: ${p.countryAccent}.`,
     `Environment: ${p.environment}.`,
+    `Visual signature: ${p.signature}.`,
     `Rarity treatment: ${p.rarityAura}.`,
-    "Composition: clean full-body or strong bust silhouette, centered, readable at small size, designed for a 280x140 card crop.",
-    "Palette: dark navy base (#00123F), glowing circuit-board patterns, high-contrast neon accents.",
-    "Style: ultra-detailed digital art, realistic materials, dramatic lighting, polished cyberpunk editorial finish.",
+    `Composition: ${p.composition}; readable at small size, designed for a 280x140 card crop.`,
+    `Palette: ${p.palette}; avoid default blue-purple cyberpunk sameness.`,
+    "Style: ultra-detailed digital art, realistic materials, dramatic lighting, polished editorial finish.",
     "Avoid: hooded hacker cliché, code rain, literal flags, seals, stereotypes, letters, numbers, readable text.",
   ].join(" ")
 }
