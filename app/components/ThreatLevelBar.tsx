@@ -34,7 +34,7 @@ export function ThreatLevelBar({ level, showLabel = false }: ThreatLevelBarProps
               width: "10px",
               height: "14px",
               borderRadius: "2px",
-              backgroundColor: getSegmentColor(i, clamped),
+              backgroundColor: i < clamped ? getSegmentColor(i, clamped) : "var(--card-grid-line)",
               transition: "background-color 0.2s ease",
               boxShadow:
                 i < clamped
@@ -47,7 +47,7 @@ export function ThreatLevelBar({ level, showLabel = false }: ThreatLevelBarProps
           style={{
             fontFamily: "monospace",
             fontSize: "12px",
-            color: "#FFFFFF",
+            color: "var(--card-text)",
             fontWeight: 700,
             marginLeft: "4px",
           }}
@@ -60,7 +60,7 @@ export function ThreatLevelBar({ level, showLabel = false }: ThreatLevelBarProps
           style={{
             fontFamily: "monospace",
             fontSize: "10px",
-            color: "#978BFF",
+            color: "var(--card-label-strong)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
           }}

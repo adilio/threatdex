@@ -14,8 +14,8 @@ const MOTIVATIONS: { value: Motivation; label: string }[] = [
 
 const RARITIES: { value: Rarity; label: string; color: string }[] = [
   { value: "MYTHIC", label: "Mythic", color: "#FFFF00" },
-  { value: "LEGENDARY", label: "Legendary", color: "#FF0BBE" },
-  { value: "EPIC", label: "Epic", color: "#978BFF" },
+  { value: "LEGENDARY", label: "Legendary", color: "#FF9BBE" },
+  { value: "EPIC", label: "Epic", color: "#97BBFF" },
   { value: "RARE", label: "Rare", color: "#6197FF" },
 ];
 
@@ -113,7 +113,7 @@ export function FilterPanel({
         onChange={(e) => updateParam("country", e.target.value)}
         placeholder="Country…"
         aria-label="Filter by country"
-        className="px-3 py-1.5 bg-blue-shadow/20 border border-blue-shadow hover:border-sky-blue/50 focus:border-wiz-blue focus:ring-1 focus:ring-wiz-blue/20 rounded-lg text-xs text-cloudy-white placeholder-sky-blue/40 outline-none transition-colors w-32"
+        className="wiz-control px-3 py-1.5 text-xs text-cloudy-white placeholder-sky-blue/40 w-32"
       />
 
       {/* Motivation chips */}
@@ -130,10 +130,10 @@ export function FilterPanel({
               onClick={() => toggleMotivation(value)}
               aria-pressed={active}
               className={clsx(
-                "px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide transition-all border",
+                "wiz-chip px-2.5 py-1 text-xs uppercase tracking-wide transition-all",
                 active
-                  ? "bg-wiz-blue border-wiz-blue text-white"
-                  : "bg-blue-shadow/20 border-blue-shadow/60 text-sky-blue/70 hover:border-sky-blue hover:text-cloudy-white",
+                  ? "wiz-chip-active"
+                  : "text-sky-blue/70 hover:text-cloudy-white",
               )}
             >
               {label}
@@ -147,7 +147,7 @@ export function FilterPanel({
         value={initialSource}
         onChange={(e) => updateParam("source", e.target.value)}
         aria-label="Filter by source"
-        className="px-3 py-1.5 bg-blue-shadow/20 border border-blue-shadow hover:border-sky-blue/50 focus:border-wiz-blue focus:ring-1 focus:ring-wiz-blue/20 rounded-lg text-xs text-cloudy-white outline-none transition-colors appearance-none cursor-pointer"
+        className="wiz-control px-3 py-1.5 text-xs text-cloudy-white appearance-none cursor-pointer"
       >
         <option value="" className="bg-serious-blue text-cloudy-white">
           All Sources
@@ -164,10 +164,10 @@ export function FilterPanel({
         onClick={toggleVerified}
         aria-pressed={initialVerified === "true"}
         className={clsx(
-          "px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide transition-all border flex items-center gap-1.5",
+          "wiz-chip px-2.5 py-1 text-xs uppercase tracking-wide transition-all flex items-center gap-1.5",
           initialVerified === "true"
-            ? "bg-emerald-600/30 border-emerald-500 text-emerald-400"
-            : "bg-blue-shadow/20 border-blue-shadow/60 text-sky-blue/70 hover:border-sky-blue hover:text-cloudy-white",
+            ? "wiz-magic-chip"
+            : "text-sky-blue/70 hover:text-cloudy-white",
         )}
         title="Show only actors verified across multiple sources"
       >
@@ -199,7 +199,7 @@ export function FilterPanel({
         value={initialRarity}
         onChange={(e) => updateParam("rarity", e.target.value)}
         aria-label="Filter by rarity"
-        className="px-3 py-1.5 bg-blue-shadow/20 border border-blue-shadow hover:border-sky-blue/50 focus:border-wiz-blue focus:ring-1 focus:ring-wiz-blue/20 rounded-lg text-xs text-cloudy-white outline-none transition-colors appearance-none cursor-pointer"
+        className="wiz-control px-3 py-1.5 text-xs text-cloudy-white appearance-none cursor-pointer"
         style={{
           color: initialRarity
             ? RARITIES.find((r) => r.value === initialRarity)?.color ??
@@ -226,7 +226,7 @@ export function FilterPanel({
       {hasActiveFilters && (
         <button
           onClick={clearAll}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-pink-shadow hover:text-vibrant-pink border border-pink-shadow/40 hover:border-vibrant-pink/60 rounded-lg transition-colors"
+          className="wiz-chip wiz-magic-chip px-2.5 py-1.5 text-xs transition-colors hover:text-vibrant-pink"
           aria-label="Clear all filters"
         >
           <X className="w-3 h-3" />

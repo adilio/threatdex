@@ -107,8 +107,8 @@ export function SearchBar({
         placeholder={placeholder}
         aria-label="Search threat actors"
         className={clsx(
-          "w-full pl-11 pr-10 py-3 rounded-xl text-sm font-sans",
-          "bg-blue-shadow/20 border transition-all duration-200 outline-none",
+          "wiz-control w-full pl-11 pr-10 py-3 text-sm font-sans",
+          "border transition-all duration-200",
           "text-cloudy-white placeholder-sky-blue/40",
           "focus:bg-blue-shadow/30",
           focused

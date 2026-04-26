@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { useState } from "react";
 import { Menu, X, Search, Shield } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { WizStar } from "./WizStar";
 
 export function Navigation() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -21,9 +22,13 @@ export function Navigation() {
               strokeWidth={2}
             />
             <span className="text-xl font-bold tracking-tight">
-              <span className="text-wiz-blue">Threat</span>
-              <span className="text-vibrant-pink">Dex</span>
+              <span className="brand-threat">Threat</span>
+              <span className="brand-dex">Dex</span>
             </span>
+            <WizStar
+              size={10}
+              className="text-purplish-pink opacity-80 transition-opacity group-hover:opacity-100"
+            />
           </Link>
 
           {/* Desktop nav */}
@@ -49,7 +54,7 @@ export function Navigation() {
             >
               GitHub
             </a>
-            <span className="px-2.5 py-1 bg-wiz-blue/20 border border-wiz-blue/40 text-wiz-blue text-xs font-semibold rounded-full font-mono">
+            <span className="wiz-chip px-2.5 py-1 text-xs">
               BETA
             </span>
             <ThemeToggle />

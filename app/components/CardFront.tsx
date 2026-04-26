@@ -163,7 +163,7 @@ function HeroPlaceholder({
 
 const MOTIVATION_COLORS: Record<string, { bg: string; text: string }> = {
   espionage: { bg: "rgba(2,84,236,0.25)", text: "#6197FF" },
-  financial: { bg: "rgba(255,255,0,0.15)", text: "#FFFF00" },
+  financial: { bg: "rgba(97,151,255,0.16)", text: "#97BBFF" },
   sabotage: { bg: "rgba(255,155,190,0.15)", text: "#FF9BBE" },
   hacktivism: { bg: "rgba(151,187,255,0.2)", text: "#97BBFF" },
   military: { bg: "rgba(197,107,164,0.2)", text: "#FFBFD6" },
@@ -182,7 +182,7 @@ function MotivationChip({ motivation }: { motivation: string }) {
         background: style.bg,
         color: style.text,
         border: `1px solid ${style.text}40`,
-        borderRadius: "3px",
+        borderRadius: "999px",
         fontFamily: "monospace",
         fontSize: "9px",
         fontWeight: 700,
@@ -217,8 +217,8 @@ function SophisticationPips({
             width: "6px",
             height: "6px",
             borderRadius: "50%",
-            backgroundColor: i < score ? "#97BBFF" : "#173AAA",
-            boxShadow: i < score ? "0 0 4px #97BBFF80" : undefined,
+            backgroundColor: i < score ? "var(--card-label-strong)" : "var(--card-grid-line)",
+            boxShadow: i < score ? "0 0 4px rgba(151,187,255,0.5)" : undefined,
           }}
         />
       ))}
@@ -261,7 +261,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
         maxWidth: "320px",
         aspectRatio: "280 / 392",
         borderRadius: "12px",
-        background: "linear-gradient(160deg, #01123F 0%, #0a1a4a 100%)",
+        background: "var(--card-bg)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -275,7 +275,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
       {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          background: "linear-gradient(90deg, #01123F 0%, #173AAA 100%)",
+          background: "var(--card-header-bg)",
           padding: "6px 10px",
           display: "flex",
           alignItems: "center",
@@ -288,7 +288,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
           style={{
             fontFamily: "monospace",
             fontSize: "10px",
-            color: "#6197FF",
+            color: "var(--card-label)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}
@@ -307,10 +307,10 @@ export function CardFront({ actor, className }: CardFrontProps) {
                 fontFamily: "monospace",
                 fontSize: "9px",
                 fontWeight: 700,
-                background: "rgba(0,200,83,0.2)",
-                color: "#00C853",
-                border: "1px solid rgba(0,200,83,0.5)",
-                borderRadius: "3px",
+                background: "rgba(255,191,255,0.12)",
+                color: "var(--card-magic)",
+                border: "1px solid rgba(255,191,255,0.48)",
+                borderRadius: "999px",
                 padding: "1px 4px",
                 letterSpacing: "0.05em",
               }}
@@ -323,10 +323,10 @@ export function CardFront({ actor, className }: CardFrontProps) {
             style={{
               fontFamily: "monospace",
               fontSize: "9px",
-              background: actor.tlp === "GREEN" ? "rgba(0,200,83,0.2)" : "rgba(255,255,255,0.1)",
-              color: actor.tlp === "GREEN" ? "#00C853" : "#FFFFFF",
-              border: `1px solid ${actor.tlp === "GREEN" ? "#00C85380" : "#FFFFFF40"}`,
-              borderRadius: "3px",
+              background: actor.tlp === "GREEN" ? "rgba(255,191,214,0.12)" : "rgba(255,255,255,0.1)",
+              color: actor.tlp === "GREEN" ? "var(--accent-resolved)" : "var(--card-text)",
+              border: `1px solid ${actor.tlp === "GREEN" ? "rgba(255,191,214,0.48)" : "var(--card-grid-line)"}`,
+              borderRadius: "999px",
               padding: "1px 5px",
               letterSpacing: "0.08em",
             }}
@@ -342,7 +342,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
                 background: "rgba(255,170,0,0.2)",
                 color: "#FFAA00",
                 border: "1px solid rgba(255,170,0,0.5)",
-                borderRadius: "3px",
+                borderRadius: "999px",
                 padding: "1px 4px",
                 letterSpacing: "0.05em",
               }}
@@ -382,7 +382,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
             left: 0,
             right: 0,
             height: "40px",
-            background: "linear-gradient(to top, #01123F, transparent)",
+            background: "linear-gradient(to top, var(--card-image-fade), transparent)",
           }}
         />
       </div>
@@ -401,7 +401,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
             fontFamily: "sans-serif",
             fontWeight: 800,
             fontSize: "16px",
-            color: "#FFFFFF",
+            color: "var(--card-text)",
             lineHeight: 1.2,
             letterSpacing: "-0.01em",
             overflow: "hidden",
@@ -416,7 +416,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
             style={{
               fontFamily: "sans-serif",
               fontSize: "10px",
-              color: "#97BBFF",
+              color: "var(--card-label-strong)",
               fontStyle: "italic",
               marginTop: "1px",
               overflow: "hidden",
@@ -432,7 +432,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
             style={{
               fontFamily: "monospace",
               fontSize: "9px",
-              color: "#6197FF",
+              color: "var(--card-label)",
               marginTop: "3px",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -441,7 +441,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
           >
             aka {displayAliases.join(" · ")}
             {actor.aliases.length > 3 && (
-              <span style={{ color: "#97BBFF" }}>
+              <span style={{ color: "var(--card-label-strong)" }}>
                 {" "}+{actor.aliases.length - 3}
               </span>
             )}
@@ -455,9 +455,9 @@ export function CardFront({ actor, className }: CardFrontProps) {
       <div
         style={{
           margin: "4px 10px",
-          background: "rgba(23,58,170,0.3)",
+          background: "var(--card-surface)",
           borderRadius: "6px",
-          border: "1px solid rgba(97,151,255,0.15)",
+          border: "1px solid var(--card-grid-line)",
           padding: "6px 8px",
           flexShrink: 0,
         }}
@@ -475,7 +475,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
               style={{
                 fontFamily: "monospace",
                 fontSize: "8px",
-                color: "#6197FF",
+                color: "var(--card-label)",
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
                 marginBottom: "3px",
@@ -492,7 +492,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
               style={{
                 fontFamily: "monospace",
                 fontSize: "8px",
-                color: "#6197FF",
+                color: "var(--card-label)",
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
                 marginBottom: "3px",
@@ -505,7 +505,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
               style={{
                 fontFamily: "monospace",
                 fontSize: "9px",
-                color: "#FFBFFF",
+                color: "var(--card-magic)",
                 marginTop: "2px",
               }}
             >
@@ -519,7 +519,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
               style={{
                 fontFamily: "monospace",
                 fontSize: "8px",
-                color: "#6197FF",
+                color: "var(--card-label)",
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
                 marginBottom: "2px",
@@ -531,7 +531,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
               style={{
                 fontFamily: "monospace",
                 fontSize: "10px",
-                color: "#FFFFFF",
+                color: "var(--card-text)",
               }}
             >
               {actor.country ?? "Unknown"}
@@ -554,7 +554,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
                 style={{
                   fontFamily: "monospace",
                   fontSize: "8px",
-                  color: "#6197FF",
+                  color: "var(--card-label)",
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
                   marginBottom: "2px",
@@ -566,7 +566,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
                 style={{
                   fontFamily: "monospace",
                   fontSize: "10px",
-                  color: "#FFFFFF",
+                  color: "var(--card-text)",
                 }}
               >
                 {firstLastSeen}
@@ -593,7 +593,7 @@ export function CardFront({ actor, className }: CardFrontProps) {
           style={{
             fontFamily: "monospace",
             fontSize: "8px",
-            color: "#6197FF",
+            color: "var(--card-label)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             marginRight: "2px",

@@ -1,6 +1,7 @@
 import React from "react"
 import type { ThreatActor } from "~/schema"
 import { getRarityColor } from "~/schema"
+import { WizStar } from "./WizStar"
 
 interface CardBackProps {
   actor: ThreatActor
@@ -12,24 +13,24 @@ interface CardBackProps {
 // Section header
 // ---------------------------------------------------------------------------
 
-function SectionHeader({ title, icon }: { title: string; icon: string }) {
+function SectionHeader({ title, icon }: { title: string; icon?: string }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "5px",
-        borderBottom: "1px solid rgba(97,151,255,0.2)",
-        paddingBottom: "3px",
-        marginBottom: "5px",
+        gap: "7px",
+        borderBottom: "1px solid rgba(2,84,236,0.28)",
+        paddingBottom: "5px",
+        marginBottom: "8px",
       }}
     >
-      <span style={{ fontSize: "10px" }}>{icon}</span>
+      {icon === "star" && <WizStar size={10} style={{ color: "var(--card-magic)" }} />}
       <span
         style={{
-          fontFamily: "monospace",
-          fontSize: "8px",
-          color: "#6197FF",
+          fontFamily: "Rubik, monospace",
+          fontSize: "9px",
+          color: "var(--card-label)",
           textTransform: "uppercase",
           letterSpacing: "0.12em",
           fontWeight: 700,
@@ -59,8 +60,8 @@ function TTPChip({
         flexDirection: "column",
         background: "rgba(2,84,236,0.2)",
         border: "1px solid rgba(97,151,255,0.3)",
-        borderRadius: "4px",
-        padding: "2px 5px",
+        borderRadius: "999px",
+        padding: "3px 8px",
         gap: "1px",
       }}
     >
@@ -68,7 +69,7 @@ function TTPChip({
         style={{
           fontFamily: "monospace",
           fontSize: "9px",
-          color: "#FFBFFF",
+          color: "var(--card-magic)",
           fontWeight: 700,
           letterSpacing: "0.04em",
         }}
@@ -79,7 +80,7 @@ function TTPChip({
         style={{
           fontFamily: "monospace",
           fontSize: "7px",
-          color: "#6197FF",
+          color: "var(--card-label)",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
         }}
@@ -101,12 +102,12 @@ function ToolChip({ name }: { name: string }) {
         display: "inline-flex",
         alignItems: "center",
         background: "rgba(151,139,255,0.15)",
-        border: "1px solid rgba(151,139,255,0.3)",
-        borderRadius: "3px",
+        border: "1px solid rgba(151,187,255,0.26)",
+        borderRadius: "999px",
         fontFamily: "monospace",
         fontSize: "8px",
-        color: "#97BBFF",
-        padding: "2px 5px",
+        color: "var(--card-label-strong)",
+        padding: "3px 7px",
         whiteSpace: "nowrap",
       }}
     >
@@ -138,7 +139,7 @@ function SourceLabel({ source }: { source: string }) {
         background: style.bg,
         color: style.text,
         border: `1px solid ${style.text}40`,
-        borderRadius: "3px",
+        borderRadius: "999px",
         fontFamily: "monospace",
         fontSize: "8px",
         fontWeight: 700,
@@ -173,9 +174,9 @@ function ActorImagePanel({ actor }: { actor: ThreatActor }) {
   return (
     <aside
       style={{
-        borderRadius: "12px",
-        border: `1px solid ${rarityColor}55`,
-        background: "rgba(1,18,63,0.72)",
+        borderRadius: "8px",
+        border: `1px solid ${rarityColor}4D`,
+        background: "var(--card-surface)",
         boxShadow: `0 0 22px ${rarityColor}22`,
         overflow: "hidden",
         minHeight: "100%",
@@ -237,7 +238,7 @@ function ActorImagePanel({ actor }: { actor: ThreatActor }) {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to top, rgba(1,18,63,0.95) 0%, rgba(1,18,63,0.5) 42%, transparent 72%)",
+              "linear-gradient(to top, rgba(1,18,63,0.96) 0%, rgba(1,18,63,0.48) 42%, transparent 72%)",
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
@@ -289,22 +290,22 @@ function ActorImagePanel({ actor }: { actor: ThreatActor }) {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "1px",
-          background: "rgba(97,151,255,0.18)",
+          background: "var(--card-grid-line)",
         }}
       >
-        <div style={{ background: "#01123F", padding: "12px" }}>
-          <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase" }}>
+        <div style={{ background: "var(--card-cell-bg)", padding: "12px" }}>
+          <div style={{ fontFamily: "monospace", fontSize: "9px", color: "var(--card-label)", textTransform: "uppercase" }}>
             Threat
           </div>
           <div style={{ fontFamily: "monospace", fontSize: "22px", fontWeight: 900, color: rarityColor }}>
             {actor.threatLevel}/10
           </div>
         </div>
-        <div style={{ background: "#01123F", padding: "12px" }}>
-          <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase" }}>
+        <div style={{ background: "var(--card-cell-bg)", padding: "12px" }}>
+          <div style={{ fontFamily: "monospace", fontSize: "9px", color: "var(--card-label)", textTransform: "uppercase" }}>
             Sophistication
           </div>
-          <div style={{ fontSize: "13px", fontWeight: 800, color: "#FFFFFF" }}>
+          <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--card-text)" }}>
             {actor.sophistication}
           </div>
         </div>
@@ -374,6 +375,18 @@ function collectReferences(actor: ThreatActor): ReferenceLink[] {
   })
 }
 
+const expandedPanelStyle: React.CSSProperties = {
+  background: "var(--card-panel)",
+  border: "1px solid var(--card-grid-line)",
+  borderRadius: "8px",
+}
+
+const compactPanelStyle: React.CSSProperties = {
+  background: "var(--card-panel-strong)",
+  border: "1px solid var(--card-grid-line)",
+  borderRadius: "8px",
+}
+
 // ---------------------------------------------------------------------------
 // CardBack
 // ---------------------------------------------------------------------------
@@ -400,7 +413,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
         width: expanded ? "min(1120px, 90vw)" : "280px",
         height: expanded ? "min(820px, 90vh)" : "392px",
         borderRadius: "12px",
-        background: "linear-gradient(160deg, #01123F 0%, #0a1a4a 100%)",
+        background: "var(--card-bg)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -415,7 +428,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
       {/* ------------------------------------------------------------------ */}
       <div
         style={{
-          background: "linear-gradient(90deg, #01123F 0%, #173AAA 100%)",
+          background: "var(--card-header-bg)",
           padding: "6px 10px",
           display: "flex",
           flexDirection: "column",
@@ -428,11 +441,15 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
           style={{
             fontFamily: "monospace",
             fontSize: "8px",
-            color: "#6197FF",
+            color: "var(--card-label)",
             textTransform: "uppercase",
             letterSpacing: "0.18em",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
           }}
         >
+          <WizStar size={9} style={{ color: "var(--card-magic)" }} />
           Threat Intelligence
         </div>
         <div
@@ -440,7 +457,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
             fontFamily: "sans-serif",
             fontWeight: 800,
             fontSize: "13px",
-            color: "#FFFFFF",
+            color: "var(--card-text)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -475,7 +492,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
             <ActorImagePanel actor={actor} />
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", minWidth: 0 }}>
               <section>
-                <SectionHeader title="AKA & References" icon="◎" />
+                <SectionHeader title="AKA & References" />
                 <div
                   style={{
                     display: "grid",
@@ -485,16 +502,14 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                 >
                   <div
                     style={{
-                      background: "rgba(23,58,170,0.14)",
-                      border: "1px solid rgba(97,151,255,0.18)",
-                      borderRadius: "10px",
+                      ...expandedPanelStyle,
                       padding: "12px",
                     }}
                   >
-                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "var(--card-label)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
                       Also Known As
                     </div>
-                    <div style={{ color: "rgba(255,255,255,0.74)", fontSize: "12px", lineHeight: 1.55 }}>
+                    <div style={{ color: "var(--card-text-muted)", fontSize: "12px", lineHeight: 1.55 }}>
                       {actor.aliases.length > 0
                         ? (
                             <>
@@ -507,13 +522,11 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                   </div>
                   <div
                     style={{
-                      background: "rgba(23,58,170,0.14)",
-                      border: "1px solid rgba(97,151,255,0.18)",
-                      borderRadius: "10px",
+                      ...expandedPanelStyle,
                       padding: "12px",
                     }}
                   >
-                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "var(--card-label)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
                       References
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
@@ -526,9 +539,9 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                               rel="noopener noreferrer"
                               onClick={(event) => event.stopPropagation()}
                               style={{
-                                color: "#97BBFF",
-                                border: "1px solid rgba(151,187,255,0.3)",
-                                background: "rgba(151,187,255,0.1)",
+                                color: "var(--card-label-strong)",
+                                border: "1px solid rgba(2,84,236,0.36)",
+                                background: "rgba(2,84,236,0.12)",
                                 borderRadius: "999px",
                                 padding: "5px 9px",
                                 fontFamily: "monospace",
@@ -544,19 +557,17 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                               {reference.label}
                             </a>
                           ))
-                        : <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>No references listed</span>}
+                        : <span style={{ color: "var(--card-text-soft)", fontSize: "12px" }}>No references listed</span>}
                     </div>
                   </div>
                 </div>
               </section>
 
               <section>
-                <SectionHeader title="Background" icon="▣" />
+                <SectionHeader title="Background" />
                 <div
                   style={{
-                    background: "rgba(23,58,170,0.18)",
-                    border: "1px solid rgba(97,151,255,0.2)",
-                    borderRadius: "10px",
+                    ...expandedPanelStyle,
                     padding: "14px",
                   }}
                 >
@@ -564,7 +575,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                     <p
                       style={{
                         margin: "0 0 10px",
-                        color: "#97BBFF",
+                        color: "var(--card-label-strong)",
                         fontSize: "14px",
                         fontStyle: "italic",
                         lineHeight: 1.45,
@@ -576,7 +587,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                   <p
                     style={{
                       margin: 0,
-                      color: "rgba(255,255,255,0.78)",
+                      color: "var(--card-text-muted)",
                       fontSize: "14px",
                       lineHeight: 1.65,
                     }}
@@ -593,7 +604,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                   >
                     {actor.motivation.length > 0 && (
                       <div>
-                        <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "5px" }}>
+                        <div style={{ fontFamily: "monospace", fontSize: "9px", color: "var(--card-label)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "5px" }}>
                           Motivation
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
@@ -609,29 +620,27 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
 
               {displayCampaigns.length > 0 && (
                 <section>
-                  <SectionHeader title="Known Operations" icon="▦" />
+                  <SectionHeader title="Known Operations" />
                   <div style={{ display: "grid", gap: "8px" }}>
                     {displayCampaigns.map((campaign) => (
                       <div
                         key={campaign.name}
                         style={{
-                          background: "rgba(23,58,170,0.2)",
-                          border: "1px solid rgba(97,151,255,0.15)",
-                          borderRadius: "8px",
+                          ...compactPanelStyle,
                           padding: "10px 12px",
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px" }}>
-                          <span style={{ color: "#FFFFFF", fontWeight: 800, fontSize: "14px" }}>
+                          <span style={{ color: "var(--card-text)", fontWeight: 800, fontSize: "14px" }}>
                             {campaign.name}
                           </span>
                           {campaign.year && (
-                            <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#97BBFF", flexShrink: 0 }}>
+                            <span style={{ fontFamily: "monospace", fontSize: "11px", color: "var(--card-label-strong)", flexShrink: 0 }}>
                               {campaign.year}
                             </span>
                           )}
                         </div>
-                        <p style={{ margin: "6px 0 0", color: "rgba(255,255,255,0.64)", fontSize: "12px", lineHeight: 1.55 }}>
+                        <p style={{ margin: "6px 0 0", color: "var(--card-text-muted)", fontSize: "12px", lineHeight: 1.55 }}>
                           {cleanIntelText(campaign.description)}
                         </p>
                       </div>
@@ -641,7 +650,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
               )}
 
               <section>
-                <SectionHeader title="Tools, Malware & Targets" icon="◆" />
+                <SectionHeader title="Tools, Malware & Targets" />
                 <div
                   style={{
                     display: "grid",
@@ -650,33 +659,33 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                   }}
                 >
                   <div>
-                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "var(--card-label)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
                       Tools & Malware
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                       {displayTools.length > 0
                         ? displayTools.map((tool) => <ToolChip key={tool} name={tool} />)
-                        : <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>None listed</span>}
+                        : <span style={{ color: "var(--card-text-soft)", fontSize: "12px" }}>None listed</span>}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "var(--card-label)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
                       Target Sectors
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                       {displaySectors.length > 0
                         ? displaySectors.map((sector) => <ToolChip key={sector} name={sector} />)
-                        : <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>None listed</span>}
+                        : <span style={{ color: "var(--card-text-soft)", fontSize: "12px" }}>None listed</span>}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6197FF", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "9px", color: "var(--card-label)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "7px" }}>
                       Target Regions
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                       {displayGeos.length > 0
                         ? displayGeos.map((geo) => <ToolChip key={geo} name={geo} />)
-                        : <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>None listed</span>}
+                        : <span style={{ color: "var(--card-text-soft)", fontSize: "12px" }}>None listed</span>}
                     </div>
                   </div>
                 </div>
@@ -684,28 +693,28 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
 
               {displayTTPs.length > 0 && (
                 <section>
-                  <SectionHeader title="Tactics & Techniques" icon="⚔" />
+                  <SectionHeader title="Tactics & Techniques" />
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
                     {Object.entries(ttpsByTactic).map(([tactic, entries]) => (
                       <div
                         key={tactic}
                         style={{
-                          background: "rgba(23,58,170,0.18)",
-                          border: "1px solid rgba(97,151,255,0.18)",
+                          background: "var(--card-panel)",
+                          border: "1px solid var(--card-grid-line)",
                           borderRadius: "8px",
                           padding: "10px",
                         }}
                       >
-                        <div style={{ fontFamily: "monospace", fontSize: "10px", color: "#97BBFF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
+                        <div style={{ fontFamily: "monospace", fontSize: "10px", color: "var(--card-label-strong)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
                           {tactic}
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                           {entries.map((ttp, idx) => (
                             <div key={ttp.techniqueId || `ttp-${idx}`} style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
-                              <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#FFBFFF", fontWeight: 700, minWidth: "70px" }}>
+                              <span style={{ fontFamily: "monospace", fontSize: "11px", color: "var(--card-magic)", fontWeight: 700, minWidth: "70px" }}>
                                 {ttp.techniqueId || "N/A"}
                               </span>
-                              <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.72)", lineHeight: 1.35 }}>
+                              <span style={{ fontSize: "12px", color: "var(--card-text-muted)", lineHeight: 1.35 }}>
                                 {ttp.techniqueName || "Unknown technique"}
                               </span>
                             </div>
@@ -723,29 +732,29 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
         {/* TTPs */}
         {displayTTPs.length > 0 && (
           <div>
-            <SectionHeader title="Techniques & Tactics" icon="⚔" />
+            <SectionHeader title="Techniques & Tactics" />
             {expanded ? (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
                 {Object.entries(ttpsByTactic).map(([tactic, entries]) => (
                   <div
                     key={tactic}
                     style={{
-                      background: "rgba(23,58,170,0.18)",
-                      border: "1px solid rgba(97,151,255,0.18)",
+                      background: "var(--card-panel)",
+                      border: "1px solid var(--card-grid-line)",
                       borderRadius: "8px",
                       padding: "10px",
                     }}
                   >
-                    <div style={{ fontFamily: "monospace", fontSize: "10px", color: "#97BBFF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "10px", color: "var(--card-label-strong)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
                       {tactic}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                       {entries.map((ttp, idx) => (
                         <div key={ttp.techniqueId || `ttp-${idx}`} style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
-                          <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#FFBFFF", fontWeight: 700, minWidth: "70px" }}>
+                          <span style={{ fontFamily: "monospace", fontSize: "11px", color: "var(--card-magic)", fontWeight: 700, minWidth: "70px" }}>
                             {ttp.techniqueId || "N/A"}
                           </span>
-                          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.72)", lineHeight: 1.35 }}>
+                          <span style={{ fontSize: "12px", color: "var(--card-text-muted)", lineHeight: 1.35 }}>
                             {ttp.techniqueName || "Unknown technique"}
                           </span>
                         </div>
@@ -768,7 +777,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                     style={{
                       fontFamily: "monospace",
                       fontSize: "8px",
-                      color: "#6197FF",
+                      color: "var(--card-label)",
                       alignSelf: "center",
                     }}
                   >
@@ -783,15 +792,15 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
         {/* Campaigns */}
         {displayCampaigns.length > 0 && (
           <div>
-            <SectionHeader title="Known Campaigns" icon="📋" />
+            <SectionHeader title="Known Campaigns" />
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               {displayCampaigns.map((campaign) => (
                 <div
                   key={campaign.name}
                   style={{
-                    background: "rgba(23,58,170,0.2)",
-                    border: "1px solid rgba(97,151,255,0.15)",
-                    borderRadius: "4px",
+                    background: "var(--card-panel-strong)",
+                    border: "1px solid var(--card-grid-line)",
+                    borderRadius: "8px",
                     padding: "4px 6px",
                   }}
                 >
@@ -807,7 +816,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                       style={{
                         fontFamily: "monospace",
                         fontSize: "9px",
-                        color: "#FFBFFF",
+                        color: "var(--card-magic)",
                         fontWeight: 700,
                       }}
                     >
@@ -818,7 +827,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                         style={{
                           fontFamily: "monospace",
                           fontSize: "8px",
-                          color: "#6197FF",
+                          color: "var(--card-label)",
                         }}
                       >
                         {campaign.year}
@@ -830,7 +839,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                       margin: 0,
                       fontFamily: "sans-serif",
                       fontSize: "8px",
-                      color: "rgba(255,255,255,0.55)",
+                      color: "var(--card-text-soft)",
                       lineHeight: 1.4,
                       overflow: expanded ? undefined : "hidden",
                       display: expanded ? undefined : "-webkit-box",
@@ -849,7 +858,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
         {/* Tools */}
         {displayTools.length > 0 && (
           <div>
-            <SectionHeader title="Tools & Malware" icon="🔧" />
+            <SectionHeader title="Tools & Malware" />
             <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
               {displayTools.map((tool) => (
                 <ToolChip key={tool} name={tool} />
@@ -859,7 +868,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                   style={{
                     fontFamily: "monospace",
                     fontSize: "8px",
-                    color: "#6197FF",
+                    color: "var(--card-label)",
                     alignSelf: "center",
                   }}
                 >
@@ -881,7 +890,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
           >
             {displaySectors.length > 0 && (
               <div>
-                <SectionHeader title="Sectors" icon="🏭" />
+                <SectionHeader title="Sectors" />
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   {displaySectors.map((sector) => (
                     <span
@@ -889,7 +898,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                       style={{
                         fontFamily: "monospace",
                         fontSize: "8px",
-                        color: "#FFBFFF",
+                        color: "var(--card-magic)",
                       }}
                     >
                       • {sector}
@@ -900,7 +909,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                       style={{
                         fontFamily: "monospace",
                         fontSize: "8px",
-                        color: "#6197FF",
+                        color: "var(--card-label)",
                       }}
                     >
                       +{actor.sectors.length - 3} more
@@ -911,7 +920,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
             )}
             {displayGeos.length > 0 && (
               <div>
-                <SectionHeader title="Targets" icon="🌍" />
+                <SectionHeader title="Targets" />
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   {displayGeos.map((geo) => (
                     <span
@@ -919,7 +928,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                       style={{
                         fontFamily: "monospace",
                         fontSize: "8px",
-                        color: "#FFBFFF",
+                        color: "var(--card-magic)",
                       }}
                     >
                       • {geo}
@@ -930,7 +939,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
                       style={{
                         fontFamily: "monospace",
                         fontSize: "8px",
-                        color: "#6197FF",
+                        color: "var(--card-label)",
                       }}
                     >
                       +{actor.geographies.length - 3} more
@@ -951,13 +960,13 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
       {!expanded && (
         <div
           style={{
-            borderTop: "1px solid rgba(97,151,255,0.2)",
+            borderTop: "1px solid var(--card-grid-line)",
             padding: "5px 10px 7px",
             display: "flex",
             alignItems: "center",
             gap: "4px",
             flexShrink: 0,
-            background: "rgba(0,18,63,0.6)",
+            background: "var(--card-footer)",
             flexWrap: "wrap",
           }}
         >
@@ -965,7 +974,7 @@ export function CardBack({ actor, className, expanded = false }: CardBackProps) 
             style={{
               fontFamily: "monospace",
               fontSize: "7px",
-              color: "#6197FF",
+              color: "var(--card-label)",
               textTransform: "uppercase",
               letterSpacing: "0.1em",
               marginRight: "2px",

@@ -43,7 +43,7 @@ function TTPSection({ ttps }: { ttps: ThreatActor["ttps"] }) {
       <h2 className="font-bold text-wiz-blue mb-4 uppercase tracking-widest text-sm">TTPs — MITRE ATT&CK</h2>
       <div className="space-y-4">
         {Object.entries(byTactic).map(([tactic, entries]) => (
-          <div key={tactic} className="bg-blue-shadow/20 border border-blue-shadow/40 rounded-lg p-4">
+          <div key={tactic} className="wiz-section-panel p-4">
             <h3 className="text-sky-blue font-semibold text-sm uppercase tracking-wider mb-3">{tactic}</h3>
             <div className="flex flex-wrap gap-2">
               {entries.map((ttp, idx) => (
@@ -52,7 +52,7 @@ function TTPSection({ ttps }: { ttps: ThreatActor["ttps"] }) {
                   href={ttp.techniqueId ? `https://attack.mitre.org/techniques/${ttp.techniqueId.replace(".", "/")}/` : "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-serious-blue border border-sky-blue/30 rounded text-xs font-mono text-sky-blue hover:border-sky-blue hover:text-cloudy-white transition-colors"
+                  className="wiz-link-pill inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono transition-colors"
                   style={!ttp.techniqueId ? { opacity: 0.6, pointerEvents: "none" } : undefined}
                 >
                   <span className="text-light-sky-blue">{ttp.techniqueId || "N/A"}</span>
@@ -118,7 +118,7 @@ function CampaignsSection({ campaigns }: { campaigns: ThreatActor["campaigns"] }
                 {decadeCampaigns.map((campaign, idx) => (
                   <div
                     key={idx}
-                    className="group relative bg-blue-shadow/10 border border-blue-shadow/30 hover:border-wiz-blue/50 rounded-lg p-4 transition-all"
+                    className="group relative wiz-section-panel p-4 transition-all"
                   >
                     <div className="absolute -left-[33px] top-4 w-2 h-2 rounded-full bg-sky-blue/50 group-hover:bg-wiz-blue transition-colors" />
                     <div className="flex items-start justify-between gap-3 mb-2">
@@ -126,7 +126,7 @@ function CampaignsSection({ campaigns }: { campaigns: ThreatActor["campaigns"] }
                         {campaign.name}
                       </h3>
                       {campaign.year && (
-                        <span className="text-xs font-mono text-sky-blue/60 bg-serious-blue px-2 py-0.5 rounded">
+                        <span className="wiz-chip px-2 py-0.5 text-xs font-mono">
                           {campaign.year}
                         </span>
                       )}
@@ -152,7 +152,7 @@ function ToolsSection({ tools }: { tools: string[] }) {
       <h2 className="font-bold text-wiz-blue mb-4 uppercase tracking-widest text-sm">Tools &amp; Malware</h2>
       <div className="flex flex-wrap gap-2">
         {tools.map((tool) => (
-          <span key={tool} className="px-3 py-1.5 bg-blue-shadow/30 border border-blue-shadow text-sky-blue text-sm font-mono rounded hover:bg-blue-shadow/50 transition-colors">
+          <span key={tool} className="wiz-chip px-3 py-1.5 text-sm font-mono hover:bg-blue-shadow/50 transition-colors">
             {tool}
           </span>
         ))}
@@ -233,7 +233,7 @@ export default function ActorPage() {
               <span className="text-xs uppercase tracking-widest text-sky-blue/50 font-semibold mr-2">Also known as</span>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {actor.aliases.map((alias) => (
-                  <span key={alias} className="px-2 py-0.5 bg-blue-shadow/20 text-sky-blue text-xs font-mono rounded border border-blue-shadow/30">{alias}</span>
+                  <span key={alias} className="wiz-chip px-2 py-0.5 text-xs font-mono">{alias}</span>
                 ))}
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function ActorPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
             {actor.country && (
-              <div className="bg-blue-shadow/20 rounded-lg p-3 border border-blue-shadow/30">
+              <div className="wiz-section-panel p-3">
                 <div className="text-xs uppercase tracking-widest text-sky-blue/50 mb-1">Origin</div>
                 <div className="font-semibold text-cloudy-white text-sm flex items-center gap-1.5">
                   {actor.countryCode && <span className="font-mono text-xs text-sky-blue/60">[{actor.countryCode}]</span>}
@@ -249,25 +249,25 @@ export default function ActorPage() {
                 </div>
               </div>
             )}
-            <div className="bg-blue-shadow/20 rounded-lg p-3 border border-blue-shadow/30">
+            <div className="wiz-section-panel p-3">
               <div className="text-xs uppercase tracking-widest text-sky-blue/50 mb-1">Threat Level</div>
               <div className="font-bold text-2xl font-mono" style={{ color: rarityColor }}>
                 {actor.threatLevel}<span className="text-xs text-sky-blue/40 ml-1">/10</span>
               </div>
             </div>
-            <div className="bg-blue-shadow/20 rounded-lg p-3 border border-blue-shadow/30">
+            <div className="wiz-section-panel p-3">
               <div className="text-xs uppercase tracking-widest text-sky-blue/50 mb-1">Sophistication</div>
               <div className="font-semibold text-cloudy-white text-sm">{actor.sophistication}</div>
             </div>
             {actor.firstSeen && (
-              <div className="bg-blue-shadow/20 rounded-lg p-3 border border-blue-shadow/30">
+              <div className="wiz-section-panel p-3">
                 <div className="text-xs uppercase tracking-widest text-sky-blue/50 mb-1">Active Since</div>
                 <div className="font-mono text-cloudy-white text-sm">{actor.firstSeen}{actor.lastSeen && ` – ${actor.lastSeen}`}</div>
               </div>
             )}
-            <div className="bg-blue-shadow/20 rounded-lg p-3 border border-blue-shadow/30">
+            <div className="wiz-section-panel p-3">
               <div className="text-xs uppercase tracking-widest text-sky-blue/50 mb-1">TLP</div>
-              <div className={`font-mono font-bold text-sm ${actor.tlp === "GREEN" ? "text-green-400" : "text-cloudy-white"}`}>TLP:{actor.tlp}</div>
+              <div className={`font-mono font-bold text-sm ${actor.tlp === "GREEN" ? "text-frosting-pink" : "text-cloudy-white"}`}>TLP:{actor.tlp}</div>
             </div>
           </div>
 
@@ -275,7 +275,7 @@ export default function ActorPage() {
             <span className="text-xs uppercase tracking-widest text-sky-blue/50 font-semibold">Motivation</span>
             <div className="flex flex-wrap gap-2 mt-1.5">
               {actor.motivation.map((m) => (
-                <span key={m} className="px-2.5 py-1 bg-wiz-blue/20 border border-wiz-blue/40 text-wiz-blue text-xs font-semibold rounded uppercase tracking-wide">{m}</span>
+                <span key={m} className="wiz-chip px-2.5 py-1 text-xs uppercase tracking-wide">{m}</span>
               ))}
             </div>
           </div>
@@ -290,7 +290,7 @@ export default function ActorPage() {
               <span className="text-xs uppercase tracking-widest text-sky-blue/50 font-semibold block mb-2">Target Sectors</span>
               <div className="flex flex-wrap gap-1.5">
                 {actor.sectors.map((s) => (
-                  <span key={s} className="px-2.5 py-1 bg-frosting-pink/10 border border-frosting-pink/20 text-frosting-pink text-xs rounded">{s}</span>
+                  <span key={s} className="wiz-chip wiz-magic-chip px-2.5 py-1 text-xs">{s}</span>
                 ))}
               </div>
             </div>
@@ -301,7 +301,7 @@ export default function ActorPage() {
               <span className="text-xs uppercase tracking-widest text-sky-blue/50 font-semibold block mb-2">Target Regions</span>
               <div className="flex flex-wrap gap-1.5">
                 {actor.geographies.map((g) => (
-                  <span key={g} className="px-2.5 py-1 bg-light-sky-blue/10 border border-light-sky-blue/20 text-light-sky-blue text-xs rounded">{g}</span>
+                  <span key={g} className="wiz-chip px-2.5 py-1 text-xs">{g}</span>
                 ))}
               </div>
             </div>

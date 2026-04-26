@@ -24,6 +24,35 @@
   --t-page-bg: #01123f;
   --t-nav-bg: rgba(1, 18, 63, 0.95);
   --t-nav-border: rgba(23, 58, 170, 0.6);
+  --surface: #01123f;
+  --surface-raised: #071a4a;
+  --surface-muted: rgba(23, 58, 170, 0.18);
+  --surface-soft: rgba(2, 84, 236, 0.1);
+  --border-subtle: rgba(151, 187, 255, 0.18);
+  --border-strong: rgba(2, 84, 236, 0.55);
+  --link: #6197ff;
+  --link-hover: #97bbff;
+  --accent-magic: #ffbfff;
+  --accent-resolved: #ffbfd6;
+  --text-primary: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.68);
+  --card-bg: linear-gradient(160deg, #01123f 0%, #0a1a4a 100%);
+  --card-header-bg: linear-gradient(90deg, #01123f 0%, #173aaa 100%);
+  --card-surface: rgba(23, 58, 170, 0.3);
+  --card-panel: rgba(23, 58, 170, 0.18);
+  --card-panel-strong: rgba(23, 58, 170, 0.2);
+  --card-footer: rgba(0, 18, 63, 0.6);
+  --card-text: #ffffff;
+  --card-text-muted: rgba(255, 255, 255, 0.68);
+  --card-text-soft: rgba(255, 255, 255, 0.55);
+  --card-label: #6197ff;
+  --card-label-strong: #97bbff;
+  --card-magic: #ffbfff;
+  --card-image-fade: #01123f;
+  --card-cell-bg: #01123f;
+  --card-grid-line: rgba(97, 151, 255, 0.18);
+  --radius-pill: 999px;
+  --radius-card: 8px;
 }
 
 /* ——— Light theme overrides ——— */
@@ -31,13 +60,47 @@
   --t-page-bg: #ffffff;
   --t-nav-bg: rgba(255, 255, 255, 0.92);
   --t-nav-border: rgba(1, 18, 63, 0.12);
+  --surface: #ffffff;
+  --surface-raised: #f4f8ff;
+  --surface-muted: rgba(244, 248, 255, 0.92);
+  --surface-soft: rgba(2, 84, 236, 0.08);
+  --border-subtle: rgba(1, 18, 63, 0.14);
+  --border-strong: rgba(2, 84, 236, 0.42);
+  --link: #0254ec;
+  --link-hover: #173aaa;
+  --accent-magic: #c56ba4;
+  --accent-resolved: #173aaa;
+  --text-primary: #01123f;
+  --text-muted: rgba(1, 18, 63, 0.62);
+  --card-bg: linear-gradient(160deg, #ffffff 0%, #f4f8ff 100%);
+  --card-header-bg: linear-gradient(90deg, #ffffff 0%, #eaf2ff 100%);
+  --card-surface: rgba(2, 84, 236, 0.08);
+  --card-panel: rgba(2, 84, 236, 0.07);
+  --card-panel-strong: rgba(2, 84, 236, 0.1);
+  --card-footer: rgba(244, 248, 255, 0.92);
+  --card-text: #01123f;
+  --card-text-muted: rgba(1, 18, 63, 0.68);
+  --card-text-soft: rgba(1, 18, 63, 0.54);
+  --card-label: #173aaa;
+  --card-label-strong: #0254ec;
+  --card-magic: #9a4779;
+  --card-image-fade: #ffffff;
+  --card-cell-bg: #ffffff;
+  --card-grid-line: rgba(1, 18, 63, 0.12);
 
   /*
-   * Override --color-cloudy-white so every Tailwind utility that references it
-   * (text-cloudy-white, bg-cloudy-white, border-cloudy-white, etc.) renders
-   * in serious-blue instead of white — making white text readable on a white page.
+   * Light mode needs its own readable product tokens. The card faces mostly use
+   * fixed inline dark surfaces; these overrides target app chrome and detail
+   * pages where Tailwind utilities sit on a white canvas.
    */
   --color-cloudy-white: #01123f;
+  --color-sky-blue: #01123f;
+  --color-light-sky-blue: #173aaa;
+  --color-blue-shadow: #c7d8ff;
+  --color-serious-blue: #ffffff;
+  --color-purplish-pink: #c56ba4;
+  --color-frosting-pink: #9a4779;
+  --color-pink-shadow: #9a4779;
 }
 
 /* ——— Base ——— */
@@ -57,6 +120,131 @@ body {
 .site-nav {
   background: var(--t-nav-bg) !important;
   border-bottom-color: var(--t-nav-border) !important;
+}
+
+.brand-threat {
+  color: #6197ff;
+}
+
+.brand-dex {
+  color: #ff7bd1;
+}
+
+[data-theme="light"] .brand-threat {
+  color: #0254ec;
+}
+
+[data-theme="light"] .brand-dex {
+  color: #c56ba4;
+}
+
+/* ——— Wiz-flavored product primitives ——— */
+.wiz-star {
+  display: inline-block;
+  color: currentColor;
+  flex: 0 0 auto;
+}
+
+.wiz-control {
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.wiz-control:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-soft);
+}
+
+.wiz-control:focus,
+.wiz-control:focus-visible {
+  border-color: #0254ec;
+  box-shadow: 0 0 0 3px rgba(2, 84, 236, 0.22);
+  outline: none;
+}
+
+.wiz-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  color: var(--link);
+  font-family: "Rubik", ui-monospace, monospace;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wiz-chip-active {
+  border-color: #0254ec;
+  background: #0254ec;
+  color: #ffffff;
+}
+
+.wiz-link-pill {
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(2, 84, 236, 0.36);
+  background: rgba(2, 84, 236, 0.12);
+  color: var(--link-hover);
+  text-decoration: none;
+}
+
+.wiz-link-pill:hover {
+  border-color: rgba(151, 187, 255, 0.62);
+  background: rgba(2, 84, 236, 0.2);
+}
+
+.wiz-magic-chip {
+  border-color: rgba(255, 191, 255, 0.46);
+  background: rgba(255, 191, 255, 0.12);
+  color: var(--accent-magic);
+}
+
+.wiz-section-panel {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-subtle);
+  background:
+    linear-gradient(180deg, rgba(2, 84, 236, 0.08), rgba(23, 58, 170, 0.12)),
+    rgba(1, 18, 63, 0.44);
+}
+
+[data-theme="light"] .wiz-section-panel {
+  background:
+    linear-gradient(180deg, rgba(2, 84, 236, 0.06), rgba(151, 187, 255, 0.16)),
+    #f4f8ff;
+  box-shadow: 0 1px 0 rgba(1, 18, 63, 0.04);
+}
+
+[data-theme="light"] .wiz-magic-chip {
+  border-color: rgba(154, 71, 121, 0.28);
+  background: rgba(255, 191, 214, 0.34);
+  color: #7d315f;
+}
+
+[data-theme="light"] .text-sky-blue\/30 {
+  color: rgba(1, 18, 63, 0.52) !important;
+}
+
+[data-theme="light"] .text-sky-blue\/40,
+[data-theme="light"] .text-sky-blue\/50 {
+  color: rgba(1, 18, 63, 0.64) !important;
+}
+
+[data-theme="light"] .text-sky-blue\/60,
+[data-theme="light"] .text-sky-blue\/70,
+[data-theme="light"] .text-sky-blue\/80 {
+  color: rgba(1, 18, 63, 0.78) !important;
+}
+
+[data-theme="light"] .placeholder-sky-blue\/40::placeholder {
+  color: rgba(1, 18, 63, 0.48) !important;
 }
 
 /* ——— Theme toggle button ——— */

@@ -5,6 +5,7 @@ import { mapToActor } from "~/lib/actor-mapper"
 import { ThreatActorCard } from "~/components/ThreatActorCard"
 import { SearchBar } from "~/components/SearchBar"
 import { FilterPanel } from "~/components/FilterPanel"
+import { WizStar } from "~/components/WizStar"
 import type { ThreatActor } from "~/schema"
 
 const LIMIT = 20
@@ -129,10 +130,11 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="text-center mb-16">
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-4 tracking-tight">
-          <span className="text-wiz-blue">Threat</span>
-          <span className="text-vibrant-pink">Dex</span>
+          <span className="brand-threat">Threat</span>
+          <span className="brand-dex">Dex</span>
         </h1>
-        <p className="text-xl sm:text-2xl text-sky-blue/80 font-mono mb-8">
+        <p className="inline-flex items-center justify-center gap-2 text-xl sm:text-2xl text-sky-blue/80 font-mono mb-8">
+          <WizStar size={14} className="text-purplish-pink" />
           Know your adversaries, card by card.
         </p>
         <p className="text-sky-blue/60 max-w-xl mx-auto text-sm leading-relaxed">
@@ -159,7 +161,7 @@ export default function HomePage() {
       {/* Card Grid */}
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-6">
-          <div className="text-6xl">🔍</div>
+          <WizStar size={42} className="text-purplish-pink" />
           <h3 className="text-xl font-semibold text-sky-blue">
             No threat actors found
           </h3>
@@ -182,7 +184,7 @@ export default function HomePage() {
             <div className="mt-12 flex justify-center">
               <a
                 href={`?${loadMoreParams.toString()}`}
-                className="px-8 py-3 bg-wiz-blue hover:bg-blue-shadow text-white font-semibold rounded-lg transition-colors duration-200"
+                className="px-8 py-3 bg-wiz-blue hover:bg-blue-shadow text-white font-semibold rounded-full transition-colors duration-200"
               >
                 Load more actors
               </a>

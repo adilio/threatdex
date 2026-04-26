@@ -8,7 +8,7 @@ export function CardSkeleton() {
       {/* Card body */}
       <div
         className="w-[280px] h-[392px] rounded-xl overflow-hidden border border-blue-shadow/40"
-        style={{ background: "linear-gradient(160deg, #00123F 0%, #0a1a4a 100%)" }}
+        style={{ background: "var(--card-bg)" }}
       >
         {/* Header bar skeleton */}
         <div className="h-8 skeleton-shimmer" />
