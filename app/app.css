@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* ——— Brand palette (fixed — never change these per theme) ——— */
   --color-wiz-blue: #0254ec;
   --color-purplish-pink: #ffbfff;
   --color-cloudy-white: #ffffff;
@@ -13,24 +14,110 @@
   --color-frosting-pink: #ffbfd6;
   --color-surprising-yellow: #ffff00;
 
-  --font-family-mono: "JetBrains Mono", "Fira Code", monospace;
-  --font-family-sans: "Inter", sans-serif;
+  /* ——— Typography — Wiz brand system ——— */
+  --font-family-mono: "Rubik", "JetBrains Mono", ui-monospace, monospace;
+  --font-family-sans: "DM Sans", "Inter", system-ui, -apple-system, sans-serif;
 }
 
-/* Rarity glow classes for cards */
+/* ——— Dark theme defaults ——— */
+:root {
+  --t-page-bg: #01123f;
+  --t-nav-bg: rgba(1, 18, 63, 0.95);
+  --t-nav-border: rgba(23, 58, 170, 0.6);
+}
+
+/* ——— Light theme overrides ——— */
+[data-theme="light"] {
+  --t-page-bg: #ffffff;
+  --t-nav-bg: rgba(255, 255, 255, 0.92);
+  --t-nav-border: rgba(1, 18, 63, 0.12);
+
+  /*
+   * Override --color-cloudy-white so every Tailwind utility that references it
+   * (text-cloudy-white, bg-cloudy-white, border-cloudy-white, etc.) renders
+   * in serious-blue instead of white — making white text readable on a white page.
+   */
+  --color-cloudy-white: #01123f;
+}
+
+/* ——— Base ——— */
+html {
+  background-color: var(--t-page-bg);
+}
+
+body {
+  background-color: var(--t-page-bg);
+  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.2s ease;
+}
+
+/* ——— Sticky nav — themed ——— */
+.site-nav {
+  background: var(--t-nav-bg) !important;
+  border-bottom-color: var(--t-nav-border) !important;
+}
+
+/* ——— Theme toggle button ——— */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border-radius: 99px;
+  border: 1px solid var(--t-nav-border);
+  background: transparent;
+  color: #6197ff;
+  font-family: "Rubik", monospace;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.theme-toggle:hover {
+  border-color: #0254ec;
+  color: #0254ec;
+  background: rgba(2, 84, 236, 0.08);
+  opacity: 1;
+}
+
+[data-theme="light"] .theme-toggle {
+  color: #01123f;
+  opacity: 0.7;
+}
+
+[data-theme="light"] .theme-toggle:hover {
+  border-color: #0254ec;
+  color: #0254ec;
+  opacity: 1;
+}
+
+/* ——— Light mode: ensure page-level hero text is dark enough ——— */
+[data-theme="light"] .hero-tagline {
+  color: #01123f;
+}
+
+/* ——— Rarity glow classes ——— */
 .rarity-glow-mythic {
   box-shadow: 0 0 12px #ffff00, 0 0 30px rgba(255, 255, 0, 0.25);
 }
 .rarity-glow-legendary {
-  box-shadow: 0 0 10px rgba(255, 11, 190, 0.7), 0 0 24px rgba(255, 11, 190, 0.25);
+  box-shadow: 0 0 10px rgba(255, 155, 190, 0.7),
+    0 0 24px rgba(255, 155, 190, 0.25);
 }
 .rarity-glow-epic {
-  box-shadow: 0 0 8px rgba(151, 139, 255, 0.5), 0 0 20px rgba(151, 139, 255, 0.2);
+  box-shadow: 0 0 8px rgba(151, 187, 255, 0.5),
+    0 0 20px rgba(151, 187, 255, 0.2);
 }
 .rarity-glow-rare {
   box-shadow: 0 0 6px rgba(97, 151, 255, 0.4);
 }
 
+/* ——— Card flip animation ——— */
 @keyframes threatdex-expanded-flip {
   from {
     opacity: 0;
