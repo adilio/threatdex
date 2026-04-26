@@ -2,7 +2,6 @@
  * Image generation provider abstraction.
  *
  * Supports multiple image generation providers:
- * - Google Gemini Imagen 3 (recommended, ~$0.04/image)
  * - Hugging Face Inference (free tier available)
  * - Stable Horde (free, community-powered)
  * - OpenAI DALL-E (legacy, for compatibility)
@@ -23,16 +22,11 @@ export interface ImageProviderOptions {
  * Select an available image provider based on environment variables.
  *
  * Provider precedence:
- * 1. Gemini Imagen 3 (GEMINI_API_KEY) - best quality, lowest latency
- * 2. Hugging Face (HF_API_KEY) - good quality with FLUX models
- * 3. Stable Horde (STABLE_HORDE_API_KEY) - free but variable quality/latency
- * 4. OpenAI DALL-E (OPENAI_API_KEY) - legacy support
+ * 1. Hugging Face (HF_API_KEY) - good quality with FLUX models
+ * 2. Stable Horde (STABLE_HORDE_API_KEY) - free but variable quality/latency
+ * 3. OpenAI DALL-E (OPENAI_API_KEY) - legacy support
  */
 export async function selectProvider(): Promise<ImageProvider> {
-  if (process.env.GEMINI_API_KEY) {
-    const { geminiProvider } = await import("./gemini.js")
-    return geminiProvider()
-  }
   if (process.env.HF_API_KEY) {
     const { huggingFaceProvider } = await import("./huggingface.js")
     return huggingFaceProvider()
@@ -46,7 +40,7 @@ export async function selectProvider(): Promise<ImageProvider> {
     return openAiProvider()
   }
   throw new Error(
-    "No image provider API key found. Set one of: GEMINI_API_KEY, HF_API_KEY, STABLE_HORDE_API_KEY, or OPENAI_API_KEY"
+    "No image provider API key found. Set one of: HF_API_KEY, STABLE_HORDE_API_KEY, or OPENAI_API_KEY"
   )
 }
 
@@ -56,13 +50,6 @@ export async function selectProvider(): Promise<ImageProvider> {
  */
 export async function getProviderByName(name: string): Promise<ImageProvider | null> {
   switch (name.toLowerCase()) {
-    case "gemini":
-    case "imagen":
-      if (process.env.GEMINI_API_KEY) {
-        const { geminiProvider } = await import("./gemini.js")
-        return geminiProvider()
-      }
-      return null
     case "hf":
     case "huggingface":
       if (process.env.HF_API_KEY) {

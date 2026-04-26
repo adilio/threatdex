@@ -2,7 +2,6 @@
  * AI hero image generation worker.
  *
  * Multi-provider support:
- * - Google Gemini Imagen 3 (recommended, ~$0.04/image)
  * - Hugging Face Inference (free tier available)
  * - Stable Horde (free, community-powered)
  * - OpenAI DALL-E (legacy support)
@@ -278,7 +277,6 @@ async function main(): Promise<void> {
   } catch (error) {
     console.error((error as Error).message)
     console.log("\nAvailable providers (set API key in environment):")
-    console.log("  - Gemini Imagen 3 (GEMINI_API_KEY) - recommended")
     console.log("  - Hugging Face (HF_API_KEY)")
     console.log("  - Stable Horde (STABLE_HORDE_API_KEY)")
     console.log("  - OpenAI DALL-E (OPENAI_API_KEY)")

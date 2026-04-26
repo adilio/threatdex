@@ -156,9 +156,12 @@ export function parseGroupList(html: string): string[] {
 
   $("a[href]").each((_i, el) => {
     const href = $(el).attr("href") ?? ""
+    const title = $(el).attr("title") ?? ""
+    if (!title.startsWith("Show the card for ")) return
+
     const match = href.match(/showcard\.cgi\?g=([^&"]+)/)
     if (match) {
-      const name = match[1].trim()
+      const name = decodeURIComponent(match[1].replace(/\+/g, " ")).trim()
       if (name && !groupNames.includes(name)) {
         groupNames.push(name)
       }
@@ -176,38 +179,89 @@ export function parseActorPage(
   const $ = cheerio.load(html)
 
   // Extract canonical name
-  let canonicalName = groupName.replace(/\+/g, " ").replace(/%20/g, " ").trim()
+  let canonicalName = decodeURIComponent(groupName.replace(/\+/g, " ")).trim()
+  const genericTitle = "Threat Group Cards: A Threat Actor Encyclopedia"
 
   const titleTag = $("title").first()
   if (titleTag.length) {
     const titleText = titleTag.text().trim()
-    if (titleText.includes("|")) {
+    if (/^All groups\b/i.test(titleText)) {
+      console.warn(`Skipping ETDA group list page accidentally parsed as actor: ${groupName}`)
+      return null
+    }
+    if (titleText.includes(" - Threat Group Cards")) {
+      canonicalName = titleText.split(" - Threat Group Cards")[0].trim()
+    } else if (titleText.includes("|")) {
       canonicalName = titleText.split("|")[0].trim()
     } else if (titleText) {
       canonicalName = titleText.trim()
     }
   }
 
-  // Also check for h1/h2 headings
-  $("h1, h2").each((_i, el) => {
+  // ETDA uses the h1 for the site name; h3 carries the card title.
+  $("h2, h3").each((_i, el) => {
     const text = $(el).text().trim()
-    if (text && text.length < 80) {
-      canonicalName = text
+    const match = text.match(/^(?:APT group|Tool|Group):\s*(.+)$/i)
+    if (match?.[1]) {
+      canonicalName = match[1].trim()
       return false // break
     }
   })
 
-  if (!canonicalName) {
+  if (!canonicalName || canonicalName === genericTitle) {
     console.warn(`Could not determine canonical name for group ${groupName}`)
     return null
   }
 
   // Get full text for field inference
   const fullText = $.root().text().replace(/\s+/g, " ").trim()
-  const lines = fullText.split("\n").map((l) => l.trim()).filter(Boolean)
+  const lines = $("body")
+    .text()
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+
+  function tableValue(label: string): string {
+    let value = ""
+    $("tr").each((_i, row) => {
+      const cells = $(row).find("td")
+      const rowLabel = cells.first().text().replace(/\s+/g, " ").trim()
+      if (rowLabel.toLowerCase() !== label.toLowerCase()) return
+      value = cells
+        .slice(1)
+        .map((_j, cell) => $(cell).text().replace(/\s+/g, " ").trim())
+        .get()
+        .join(" ")
+        .trim()
+      return false
+    })
+    return value
+  }
 
   // Aliases
   const aliases: string[] = []
+  const namesValue = tableValue("Names")
+  const decodedGroupParts = canonicalName.split(",").map((part) => part.trim()).filter(Boolean)
+  if (decodedGroupParts.length > 1) {
+    canonicalName = decodedGroupParts[0]
+    aliases.push(...decodedGroupParts.slice(1))
+  }
+  if (namesValue) {
+    for (const part of namesValue.split(/[,;]/)) {
+      const trimmed = part
+        .replace(/\([^)]*\)/g, "")
+        .replace(/^["']|["']$/g, "")
+        .trim()
+      if (
+        trimmed &&
+        trimmed.toLowerCase() !== canonicalName.toLowerCase() &&
+        !aliases.includes(trimmed)
+      ) {
+        aliases.push(trimmed)
+      }
+    }
+  }
+
   const aliasLabelRe = /alias(?:es)?[:\s]+(.+)/i
   const akaRe = /also\s+known\s+as[:\s]+(.+)/i
 
@@ -247,38 +301,24 @@ export function parseActorPage(
   // Country
   let country: string | undefined
   let countryCodeVal: string | undefined
-  const countryRe = /(?:country|origin|nation|sponsored\s+by)[:\s]+([^\n,;]+)/i
-
-  for (const line of lines) {
-    const m = countryRe.exec(line)
-    if (m) {
-      const rawCountry = m[1].trim().replace(/\.$/, "")
-      country = rawCountry
-      const code = countryCode(rawCountry)
-      countryCodeVal = code || undefined
-      break
-    }
+  const countryValue = tableValue("Country").replace(/^\[|\]$/g, "")
+  if (countryValue && countryValue.toLowerCase() !== "unknown") {
+    country = countryValue
+    const code = countryCode(countryValue)
+    countryCodeVal = code || undefined
   }
-
-  if (!country) {
-    const textLower = fullText.toLowerCase()
-    for (const [countryName, code] of Object.entries(COUNTRY_CODES)) {
-      if (textLower.includes(countryName) && countryName !== "unknown") {
-        country = countryName.charAt(0).toUpperCase() + countryName.slice(1)
-        countryCodeVal = code || undefined
-        break
-      }
-    }
-  }
+  // Do not infer origin from arbitrary page text. ETDA pages include target
+  // geographies in "Observed"; treating those as origin makes cards and image
+  // prompts contradict the Background section.
 
   // Motivation
-  const motivation = mapMotivation(fullText)
+  const motivation = mapMotivation(tableValue("Motivation") || fullText)
 
   // Description — first substantial paragraph
-  let description = ""
+  let description = tableValue("Description")
   $("p").each((_i, el) => {
     const text = $(el).text().trim()
-    if (text.length > 40) {
+    if (!description && text.length > 40 && !/^Last change to this card:/i.test(text)) {
       description = text
       return false // break
     }
@@ -288,7 +328,7 @@ export function parseActorPage(
   }
 
   // First / last seen years
-  let firstSeen: string | undefined
+  let firstSeen: string | undefined = parseYear(tableValue("First seen"))
   let lastSeen: string | undefined
 
   const firstSeenRe = /(?:first\s+seen|active\s+since|since)[:\s]*(.{0,30})/i
@@ -333,6 +373,13 @@ export function parseActorPage(
 
   // Tools
   const tools: string[] = []
+  const toolsValue = tableValue("Tools used")
+  if (toolsValue) {
+    for (const t of toolsValue.replace(/\.$/, "").split(/[,;]/)) {
+      const trimmed = t.trim()
+      if (trimmed && !tools.includes(trimmed)) tools.push(trimmed)
+    }
+  }
   const toolsLabelRe = /^(?:tools?|malware|backdoor):?\s*$/i
   const toolsInlineRe = /(?:tools?|malware|backdoor)[:\s]+([^\n.]+)/i
 
@@ -480,4 +527,6 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(console.error)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error)
+}

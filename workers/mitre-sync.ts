@@ -103,16 +103,29 @@ function inferCountryFromLabels(
   labels: string[],
   description: string
 ): [string | undefined, string | undefined, boolean] {
-  const countryHints: Record<string, [string, string]> = {
+  const attributionPatterns: [RegExp, string, string][] = [
+    [/\b(?:north korean|north korea-based|dprk|lazarus)\b/i, "North Korea", "KP"],
+    [/\b(?:russian|russia-based|attributed to russia|linked to russia)\b/i, "Russia", "RU"],
+    [/\b(?:chinese|china-based|attributed to china|linked to china)\b/i, "China", "CN"],
+    [/\b(?:iranian|iran-based|attributed to iran|linked to iran)\b/i, "Iran", "IR"],
+    [/\b(?:vietnamese|vietnam-based)\b/i, "Vietnam", "VN"],
+    [/\b(?:indian|india-based)\b/i, "India", "IN"],
+    [/\b(?:pakistani|pakistan-based)\b/i, "Pakistan", "PK"],
+    [/\b(?:turkish|turkey-based)\b/i, "Turkey", "TR"],
+    [/\b(?:israeli|israel-based)\b/i, "Israel", "IL"],
+    [/\b(?:us-based|united states-based|american)\b/i, "United States", "US"],
+    [/\b(?:uk-based|united kingdom-based|british)\b/i, "United Kingdom", "GB"],
+  ]
+  const labelHints: Record<string, [string, string]> = {
+    "north korea": ["North Korea", "KP"],
+    dprk: ["North Korea", "KP"],
+    lazarus: ["North Korea", "KP"],
     russia: ["Russia", "RU"],
     russian: ["Russia", "RU"],
     china: ["China", "CN"],
     chinese: ["China", "CN"],
     iran: ["Iran", "IR"],
     iranian: ["Iran", "IR"],
-    "north korea": ["North Korea", "KP"],
-    dprk: ["North Korea", "KP"],
-    lazarus: ["North Korea", "KP"],
     vietnam: ["Vietnam", "VN"],
     vietnamese: ["Vietnam", "VN"],
     india: ["India", "IN"],
@@ -132,17 +145,32 @@ function inferCountryFromLabels(
     "united states", "united kingdom", "israel"
   ])
 
-  const textToSearch =
-    labels.join(" ").toLowerCase() + " " + description.toLowerCase()
-  for (const [hint, [country, code]] of Object.entries(countryHints)) {
-    if (textToSearch.includes(hint)) {
-      const isStateSponsored = stateSponsoredCountries.has(hint) ||
-                               labels.includes("state-sponsored") ||
-                               /nation-state|state.sponsored/i.test(description)
+  const lowerLabels = labels.map((label) => label.toLowerCase())
+  for (const [hint, [country, code]] of Object.entries(labelHints)) {
+    if (lowerLabels.includes(hint)) {
+      const isStateSponsored =
+        stateSponsoredCountries.has(hint) ||
+        labels.includes("state-sponsored") ||
+        /nation-state|state.sponsored/i.test(description)
       return [country, code, isStateSponsored]
     }
   }
-  return [undefined, undefined, labels.includes("state-sponsored") || /nation-state|state.sponsored/i.test(description)]
+
+  const attributionWindow = description.slice(0, 700)
+  for (const [pattern, country, code] of attributionPatterns) {
+    if (pattern.test(attributionWindow)) {
+      const isStateSponsored =
+        labels.includes("state-sponsored") ||
+        /nation-state|state.sponsored|state-sponsored/i.test(attributionWindow)
+      return [country, code, isStateSponsored]
+    }
+  }
+
+  return [
+    undefined,
+    undefined,
+    labels.includes("state-sponsored") || /nation-state|state.sponsored/i.test(description),
+  ]
 }
 
 /**
@@ -406,4 +434,8 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(console.error)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error)
+}
+
+export { inferCountryFromLabels }
