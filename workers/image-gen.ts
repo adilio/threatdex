@@ -3,7 +3,6 @@
  *
  * Multi-provider support:
  * - Hugging Face Inference (free tier available)
- * - Stable Horde (free, community-powered)
  * - OpenAI DALL-E (legacy support)
  *
  * Images are persisted to Supabase Storage, not temporary URLs.
@@ -14,7 +13,7 @@
  *   pnpm workers:image -- --actor sandworm --force             # regenerate one
  *   pnpm workers:image -- --top 25 --exclude sandworm          # batch top 25
  *   pnpm workers:image -- --limit 10                           # cap batch size
- *   pnpm workers:image -- --provider stable-horde              # cheap mode
+ *   pnpm workers:image -- --provider huggingface               # choose provider
  */
 
 import { parseArgs } from "node:util"
@@ -278,7 +277,6 @@ async function main(): Promise<void> {
     console.error((error as Error).message)
     console.log("\nAvailable providers (set API key in environment):")
     console.log("  - Hugging Face (HF_API_KEY)")
-    console.log("  - Stable Horde (STABLE_HORDE_API_KEY)")
     console.log("  - OpenAI DALL-E (OPENAI_API_KEY)")
     process.exit(1)
   }
