@@ -259,7 +259,7 @@ function stableIndex(seed: string, modulo: number): number {
 
 function countryAccent(country: string | undefined): string {
   if (!country || country === "Unknown") return "no national symbols, only abstract cyber materials"
-  return `${country} national flag colors subtly integrated into armor plating, rim light, and energy trails; no actual flag, no emblem, no text`
+  return `${country} origin palette inspired by its national flag colors, used clearly as abstract light bands, armor accents, rim glow, and environmental reflections; no literal flag, no emblem, no text`
 }
 
 function deriveEnvironment(country: string | undefined, sophistication: string): string {

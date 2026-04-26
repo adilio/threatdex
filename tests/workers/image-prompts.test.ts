@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { buildPromptProfile } from "../../workers/image-prompts"
+import { buildImagePrompt, buildPromptProfile } from "../../workers/image-prompts"
 
 const topActors = [
   { id: "teampcp", canonical_name: "TeamPCP", country: "Unknown", motivation: ["financial", "sabotage"], sophistication: "High", rarity: "LEGENDARY" },
@@ -36,5 +36,20 @@ describe("image prompt diversity", () => {
 
     expect(oilRig.subject).toContain("drilling rig")
     expect(oilRig.signature).toContain("drill head")
+  })
+
+  it("asks for origin flag colors as abstract visual accents", () => {
+    const prompt = buildImagePrompt({
+      id: "apt41",
+      canonical_name: "APT41",
+      country: "China",
+      motivation: ["espionage"],
+      sophistication: "High",
+      rarity: "MYTHIC",
+    })
+
+    expect(prompt).toContain("China origin palette inspired by its national flag colors")
+    expect(prompt).toContain("abstract light bands")
+    expect(prompt).toContain("no literal flag")
   })
 })
