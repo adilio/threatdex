@@ -19,6 +19,7 @@
 import { parseArgs } from "node:util"
 import { createHash } from "node:crypto"
 import { getSupabase } from "./shared/supabase.js"
+import { withRetry, errorMessage } from "./shared/retry.js"
 import { selectProvider, getProviderByName, type ImageProvider } from "./image-providers/index.js"
 import { buildImagePrompt } from "./image-prompts.js"
 
@@ -70,6 +71,9 @@ function rankActors(
 /**
  * Upload image bytes to Supabase Storage and return public URL.
  * Uses hash in path for idempotency — same prompt+seed = same file.
+ *
+ * Retries transient failures (gateway timeouts, 5xx, network blips) with
+ * exponential backoff so a single flaky upload doesn't fail the whole batch.
  */
 async function uploadToStorage(
   actorId: string,
@@ -80,23 +84,35 @@ async function uploadToStorage(
   const path = `actors/${actorId}/${hash}.png`
 
   try {
-    const { error } = await supabase.storage
-      .from("actor-images")
-      .upload(path, bytes, {
-        contentType: "image/png",
-        upsert: false, // Don't overwrite existing images
-      })
+    return await withRetry(
+      async () => {
+        const { error } = await supabase.storage
+          .from("actor-images")
+          .upload(path, bytes, {
+            contentType: "image/png",
+            upsert: false, // Don't overwrite existing images
+          })
 
-    // If file already exists, that's actually fine — we got the same image
-    if (error && !error.message.includes("already exists")) {
-      console.error(`Storage upload failed for ${actorId}:`, error.message)
-      return null
-    }
+        // "Already exists" means the bytes already landed — either from a prior
+        // run or an earlier attempt whose response timed out after the upload
+        // actually applied. Either way it's a success, not a retryable error.
+        if (error && !error.message.includes("already exists")) {
+          throw new Error(error.message)
+        }
 
-    const { data } = supabase.storage.from("actor-images").getPublicUrl(path)
-    return { url: data.publicUrl, path }
+        const { data } = supabase.storage.from("actor-images").getPublicUrl(path)
+        return { url: data.publicUrl, path }
+      },
+      {
+        onRetry: ({ attempt, delayMs, error }) =>
+          console.warn(
+            `Storage upload for ${actorId} failed (${errorMessage(error)}); ` +
+              `retrying in ${delayMs}ms (attempt ${attempt})`
+          ),
+      }
+    )
   } catch (error) {
-    console.error(`Storage upload error for ${actorId}:`, error)
+    console.error(`Storage upload failed for ${actorId}:`, errorMessage(error))
     return null
   }
 }
