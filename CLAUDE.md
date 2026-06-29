@@ -246,74 +246,36 @@ The nightly cron in `.github/workflows/sync.yml` runs these same commands.
 
 -----
 
-## 8. Git workflow — CRITICAL, follow exactly
+## 8. Git workflow
 
-Every task in this project follows this exact workflow. Do not deviate.
-
-```
-main          ← protected, production-ready at all times
-└── dev       ← integration branch, PRs merge here first
-    └── feature/issue-{N}-{short-slug}   ← your working branch
-```
+All changes go directly to `main`. No feature branches, no PRs.
 
 ### Step-by-step for every task
 
 ```bash
-# 1. Always start from a fresh dev branch
-git checkout dev
-git pull origin dev
+# 1. Pull latest main
+git checkout main
+git pull origin main
 
-# 2. Create your feature branch using the issue number
-git checkout -b feature/issue-{N}-{short-slug}
-
-# 3. Do the work. Commit often with conventional commits:
+# 2. Do the work. Use conventional commits:
 #    feat: add ETDA scraper worker
 #    fix: correct alias deduplication logic
 #    chore: add Supabase migration for actors table
 #    test: add Vitest coverage for rarity computation
 #    docs: update DATA_SOURCES.md with OTX connector
 
-# 4. Before opening PR, always run:
+# 3. Before committing, run:
 pnpm lint && pnpm test
 
-# 5. Push and open PR against dev (not main)
-git push origin feature/issue-{N}-{short-slug}
-# Open PR: feature/issue-{N}-{short-slug} → dev
-# Title format: [Issue #{N}] Brief description
-# Body: fill the PR template (see Section 9)
-```
+# 4. Stage relevant files, commit with a subject + body, push
+git add <files>
+git commit -m "type: subject
 
-**Never push directly to `main` or `dev`.**
-**Every PR must have passing CI before merge.**
+Body explaining what changed and why."
+git push origin main
+```
 
 -----
-
-## 9. PR template
-
-Every PR must include this in the description:
-
-```markdown
-## What this PR does
-<!-- 1–3 sentences -->
-
-## Issue
-Closes #{N}
-
-## Changes
-- [ ] List key changes as checkboxes
-
-## Testing
-<!-- How did you verify this works? -->
-- [ ] Unit tests added/updated
-- [ ] Ran locally with `pnpm dev`
-- [ ] No regressions in existing tests
-
-## Screenshots (if frontend)
-<!-- Before/after if UI changed -->
-
-## Notes for reviewer
-<!-- Anything tricky, decisions made, follow-up issues to open -->
-```
 
 -----
 
@@ -427,16 +389,15 @@ Acceptance criteria:
 - {paste the acceptance criteria from the issue}
 
 Workflow:
-1. Checkout dev, pull latest
-2. Create branch: feature/issue-{N}-{BRANCH-SLUG}
-3. Implement the task per the spec in CLAUDE.md
-4. Run all relevant tests and linters — fix any failures
-5. Open a PR against dev using the PR template in Section 9
-6. Do not merge — leave the PR open for review
+1. Pull latest main
+2. Implement the task per the spec in CLAUDE.md
+3. Run pnpm lint && pnpm test — fix any failures
+4. Commit directly to main with a conventional commit message (subject + body)
+   and push
 
 Stay within the scope of this issue.
 If you discover work that belongs in a different issue, open a GitHub Issue
-for it and leave a note in your PR — do not do that work in this branch.
+for it — do not do that work in this commit.
 ```
 
 -----
@@ -445,10 +406,8 @@ for it and leave a note in your PR — do not do that work in this branch.
 
 A task is done when:
 
-- [ ] Code is on a `feature/issue-{N}-*` branch
 - [ ] All new code has tests
 - [ ] `pnpm lint && pnpm test` passes
-- [ ] PR is open against `dev` with the PR template filled out
+- [ ] Changes committed directly to `main` with a conventional commit message
 - [ ] No secrets are committed
 - [ ] No `console.log` debug statements left in
-- [ ] CLAUDE.md has not been modified (changes need a separate PR)
